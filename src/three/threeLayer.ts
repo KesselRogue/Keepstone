@@ -17,7 +17,19 @@ class ThreeLayer {
   init(container: HTMLElement, phaserCanvas: HTMLCanvasElement): void {
     if (this.context) return;
     this.context = new ThreeContext(container, phaserCanvas);
-    this.chaseCamera = new ChaseCamera(this.context.camera, new THREE.Vector3(0, 6, 5.5), 0.12);
+    this.chaseCamera = new ChaseCamera(this.context.camera, new THREE.Vector3(0, 9, 8.2), 0.12);
+
+    // Scroll wheel zoom: listen on the container (not either canvas
+    // specifically) so it works regardless of which one is on top.
+    // preventDefault stops the page itself from scrolling.
+    container.addEventListener(
+      "wheel",
+      (e: WheelEvent) => {
+        e.preventDefault();
+        this.chaseCamera?.adjustZoom(e.deltaY * 0.0015);
+      },
+      { passive: false },
+    );
   }
 
   setLevelGroup(group: THREE.Group): void {

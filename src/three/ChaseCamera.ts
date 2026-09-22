@@ -8,6 +8,9 @@ export interface ChaseCameraBounds {
   maxZ: number;
 }
 
+const MIN_ZOOM = 0.55;
+const MAX_ZOOM = 2.4;
+
 /**
  * Fixed-angle "chase" camera: stays at a constant offset above/behind a
  * followed game-space point, lerping toward it each frame (mirroring the
@@ -15,21 +18,34 @@ export interface ChaseCameraBounds {
  * The look/follow target is clamped to level bounds so the camera doesn't
  * drift past the edge of the world, since Three has no built-in equivalent
  * of Phaser's `Camera.setBounds`.
+ *
+ * Zoom is a scalar applied to the base offset (dollying the camera along
+ * its own view direction) rather than changing FOV, so the viewing angle
+ * stays consistent while zoomed in or out.
  */
 export class ChaseCamera {
   private camera: THREE.PerspectiveCamera;
+  private baseOffset: THREE.Vector3;
   private offset: THREE.Vector3;
   private lerpFactor: number;
   private bounds: ChaseCameraBounds | null = null;
+  private zoom = 1;
 
   constructor(camera: THREE.PerspectiveCamera, offset: THREE.Vector3, lerpFactor = 0.12) {
     this.camera = camera;
-    this.offset = offset;
+    this.baseOffset = offset.clone();
+    this.offset = offset.clone();
     this.lerpFactor = lerpFactor;
   }
 
   setBounds(bounds: ChaseCameraBounds): void {
     this.bounds = bounds;
+  }
+
+  /** `delta` > 0 zooms out, < 0 zooms in — scroll wheel deltaY convention. */
+  adjustZoom(delta: number): void {
+    this.zoom = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, this.zoom + delta));
+    this.offset.copy(this.baseOffset).multiplyScalar(this.zoom);
   }
 
   /** Places the camera immediately at the target, skipping the lerp-in. */

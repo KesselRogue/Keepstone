@@ -24,7 +24,7 @@ export class ThreeContext {
     container.insertBefore(this.canvas, container.firstChild);
 
     this.scene = new THREE.Scene();
-    this.camera = new THREE.PerspectiveCamera(48, 4 / 3, 0.1, 1000);
+    this.camera = new THREE.PerspectiveCamera(55, 4 / 3, 0.1, 1000);
 
     this.renderer = new THREE.WebGLRenderer({ canvas: this.canvas, alpha: true, antialias: true });
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
