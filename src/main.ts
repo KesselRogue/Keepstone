@@ -5,28 +5,22 @@ import { gameConfig } from "./config/gameConfig";
 import { persistCharacter } from "./systems/gameState";
 import { ThreeContext } from "./three/ThreeContext";
 import { WorldSync } from "./three/WorldSync";
+import { ChaseCamera } from "./three/ChaseCamera";
 import { playerPosition } from "./three/playerPosition";
+import { TOWN_LEVEL } from "./data/levels";
 
 const game = new Phaser.Game(gameConfig);
 
 window.addEventListener("beforeunload", persistCharacter);
 
-// --- Position-sync spike (migration build-order step 3) ---
-// Proves the game-space -> Three-space coordinate mapping by tracking the
-// live player position, read-only. Phaser's own player sprite still renders
-// normally alongside it for comparison. Camera is still static here — the
-// chase camera comes in the next step.
+// --- Camera spike (migration build-order step 4) ---
+// Swaps the still-static spike camera for the real chase camera, following
+// the synced tracking box. Phaser's own player sprite still renders
+// normally alongside it for comparison.
 // TODO: replaced by real WorldSync-driven rendering of the whole level.
 game.events.once(Phaser.Core.Events.READY, () => {
   const container = document.getElementById("game-container")!;
   const three = new ThreeContext(container, game.canvas);
-
-  // Town's grid occupies roughly Three-space x:[0,18] z:[0,12] (not centered
-  // at the origin), so aim the still-static spike camera at the player's
-  // actual starting tile rather than (0,0,0). The real chase camera (next
-  // step) follows the live position instead of a fixed look-at target.
-  three.camera.position.set(9.5, 8, 10.5);
-  three.camera.lookAt(new THREE.Vector3(9.5, 0, 2.5));
 
   const ground = new THREE.Mesh(
     new THREE.PlaneGeometry(60, 60),
@@ -42,8 +36,18 @@ game.events.once(Phaser.Core.Events.READY, () => {
   three.scene.add(marker);
   const sync = new WorldSync(playerPosition, marker, 0.8);
 
+  const chaseCamera = new ChaseCamera(three.camera, new THREE.Vector3(0, 6, 5.5), 0.12);
+  chaseCamera.setBounds({
+    minX: 1,
+    maxX: TOWN_LEVEL.grid[0].length - 2,
+    minZ: 1,
+    maxZ: TOWN_LEVEL.grid.length - 2,
+  });
+  chaseCamera.snapTo(playerPosition.x, playerPosition.y);
+
   const tick = () => {
     sync.update();
+    chaseCamera.update(playerPosition.x, playerPosition.y);
     three.render();
     requestAnimationFrame(tick);
   };
