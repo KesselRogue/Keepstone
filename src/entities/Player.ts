@@ -2,6 +2,7 @@ import Phaser from "phaser";
 import type { Character } from "../types/Character";
 import { getEffectiveStats } from "../systems/InventorySystem";
 import { InputController } from "../systems/InputController";
+import { playerPosition } from "../three/playerPosition";
 
 const ATTACK_COOLDOWN_MS = 380;
 
@@ -30,6 +31,9 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     const stats = getEffectiveStats(this.character);
     const body = this.body as Phaser.Physics.Arcade.Body;
     body.setVelocity(move.x * stats.moveSpeed, move.y * stats.moveSpeed);
+
+    playerPosition.x = this.x;
+    playerPosition.y = this.y;
   }
 
   getAim(input: InputController): { x: number; y: number } {
