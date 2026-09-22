@@ -16,11 +16,19 @@ export const ENEMY_DEFS: Record<string, EnemyDefinition> = {
     },
     xpReward: 14,
     lootTable: [
-      { itemDefId: "rusty_blade", weight: 30 },
-      { itemDefId: "scrap_plate", weight: 30 },
-      { itemDefId: "lucky_charm", weight: 15 },
-      { itemDefId: "heavy_cleaver", weight: 10 },
-      { itemDefId: "sentinel_mail", weight: 8 },
+      { itemDefId: "rusty_blade", weight: 16 },
+      { itemDefId: "heavy_cleaver", weight: 6 },
+      { itemDefId: "scrap_buckler", weight: 10 },
+      { itemDefId: "leather_cap", weight: 12 },
+      { itemDefId: "worn_pauldrons", weight: 12 },
+      { itemDefId: "scrap_plate", weight: 12 },
+      { itemDefId: "scrap_gloves", weight: 12 },
+      { itemDefId: "scrap_greaves", weight: 12 },
+      { itemDefId: "worn_boots", weight: 12 },
+      { itemDefId: "leather_belt", weight: 10 },
+      { itemDefId: "bone_charm", weight: 6 },
+      { itemDefId: "lucky_ring", weight: 6 },
+      { itemDefId: "signet_ring", weight: 6 },
     ],
     aiProfile: {
       detectRadius: 180,
@@ -42,10 +50,15 @@ export const ENEMY_DEFS: Record<string, EnemyDefinition> = {
       critChance: 0,
     },
     xpReward: 100,
+    // Boss kills force epic rarity (see handleVictory in DungeonScene) so every
+    // entry here already reads as "special" regardless of which one is picked.
     lootTable: [
-      { itemDefId: "keeper_blade", weight: 40 },
-      { itemDefId: "sentinel_mail", weight: 40 },
-      { itemDefId: "lucky_charm", weight: 20 },
+      { itemDefId: "keeper_blade", weight: 25 },
+      { itemDefId: "aegis_wall", weight: 20 },
+      { itemDefId: "sentinel_mail", weight: 20 },
+      { itemDefId: "warden_helm", weight: 15 },
+      { itemDefId: "reinforced_greaves", weight: 15 },
+      { itemDefId: "keeper_amulet", weight: 15 },
     ],
     aiProfile: {
       detectRadius: 240,

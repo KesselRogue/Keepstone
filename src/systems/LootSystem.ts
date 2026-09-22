@@ -1,13 +1,17 @@
 import type { EnemyDefinition } from "../types/Enemy";
 import type { CharacterStats } from "../types/Character";
-import type { ItemInstance } from "../types/Item";
+import type { ItemInstance, Rarity } from "../types/Item";
 import { ITEM_DEFS } from "../data/items";
 import { RARITY_CONFIG, rollRarity } from "../data/rarity";
 import { randRange } from "../utils/rng";
 
 let nextInstanceId = 1;
 
-export function rollDrop(enemyDef: EnemyDefinition, rng: () => number): ItemInstance | null {
+export function rollDrop(
+  enemyDef: EnemyDefinition,
+  rng: () => number,
+  forcedRarity?: Rarity,
+): ItemInstance | null {
   const table = enemyDef.lootTable;
   if (table.length === 0) return null;
 
@@ -25,7 +29,7 @@ export function rollDrop(enemyDef: EnemyDefinition, rng: () => number): ItemInst
   const def = ITEM_DEFS[chosenDefId];
   if (!def) return null;
 
-  const rarity = rollRarity(rng);
+  const rarity = forcedRarity ?? rollRarity(rng);
   const multiplierRange = RARITY_CONFIG[rarity].statMultiplier;
   const multiplier = randRange(rng, multiplierRange[0], multiplierRange[1]);
 
@@ -43,7 +47,7 @@ export function rollDrop(enemyDef: EnemyDefinition, rng: () => number): ItemInst
     instanceId: `item-${nextInstanceId++}`,
     defId: def.id,
     name: def.name,
-    slot: def.slot,
+    category: def.category,
     color: def.color,
     rarity,
     rolledStats,

@@ -55,6 +55,18 @@ export function createExitZones(scene: Phaser.Scene, level: LevelDefinition): Ex
   });
 }
 
+/** Wires the "C" key and a click on the player avatar to open the character sheet,
+ * pausing this scene underneath it (shared by Town and Dungeon). */
+export function wireCharacterSheetOpener(scene: Phaser.Scene, player: Phaser.GameObjects.Sprite): void {
+  const open = () => {
+    scene.scene.pause();
+    scene.scene.launch("Character", { returnScene: scene.scene.key });
+  };
+  scene.input.keyboard?.on("keydown-C", open);
+  player.setInteractive({ useHandCursor: true });
+  player.on("pointerdown", open);
+}
+
 export function spawnPickupSprite(
   scene: Phaser.Scene,
   x: number,
@@ -64,7 +76,9 @@ export function spawnPickupSprite(
   const sprite = scene.physics.add.sprite(x, y, "tex-pickup");
   sprite.setTint(RARITY_CONFIG[item.rarity].color);
   sprite.setData("item", item);
-  (sprite.body as Phaser.Physics.Arcade.Body).setAllowGravity(false);
+  const body = sprite.body as Phaser.Physics.Arcade.Body;
+  body.setAllowGravity(false);
+  body.setCircle(20, -12, -12); // generous pickup radius — no need to walk pixel-perfect onto loot
   scene.tweens.add({
     targets: sprite,
     y: y - 6,

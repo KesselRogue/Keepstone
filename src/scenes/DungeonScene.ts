@@ -11,7 +11,14 @@ import { resolveAttack } from "../systems/CombatSystem";
 import { grantXp } from "../systems/LevelingSystem";
 import { rollDrop } from "../systems/LootSystem";
 import { defaultRng } from "../utils/rng";
-import { buildLevelGeometry, createExitZones, tileToWorld, spawnPickupSprite, type ExitZone } from "./levelUtils";
+import {
+  buildLevelGeometry,
+  createExitZones,
+  tileToWorld,
+  spawnPickupSprite,
+  wireCharacterSheetOpener,
+  type ExitZone,
+} from "./levelUtils";
 
 interface SceneEntryData {
   spawnCol?: number;
@@ -50,6 +57,7 @@ export class DungeonScene extends Phaser.Scene {
     this.cameras.main.startFollow(this.player, true, 0.12, 0.12);
 
     this.inputController = new InputController(this);
+    wireCharacterSheetOpener(this, this.player);
 
     this.enemies = this.physics.add.group();
     for (const spawn of level.spawns) {
@@ -127,7 +135,8 @@ export class DungeonScene extends Phaser.Scene {
     const result = grantXp(this.player.character, enemy.def.xpReward);
     if (result.leveledUp) this.game.events.emit("level-up", result.newLevel);
 
-    const drop = rollDrop(enemy.def, defaultRng);
+    // Boss kills are guaranteed epic — grunts still roll the normal rarity table.
+    const drop = rollDrop(enemy.def, defaultRng, isBrute ? "epic" : undefined);
     if (drop) {
       const pickup = spawnPickupSprite(this, enemy.x, enemy.y, drop);
       this.pickups.add(pickup);
@@ -135,28 +144,32 @@ export class DungeonScene extends Phaser.Scene {
 
     enemy.destroy();
 
-    if (isBrute) this.handleVictory();
+    if (isBrute) this.showVictoryBanner();
   }
 
-  private handleVictory(): void {
-    if (this.transitioning) return;
-    this.transitioning = true;
-    this.player.setVelocity(0, 0);
-
+  /** Non-blocking: play continues so the player can walk over and collect the
+   * boss's drop, then leave via the normal exit whenever they're ready. */
+  private showVictoryBanner(): void {
     const { width, height } = this.scale;
-    this.add
+    const text = this.add
       .text(
         this.cameras.main.scrollX + width / 2,
-        this.cameras.main.scrollY + height / 2,
-        "Keep Cleared!\nThe Brute falls.",
-        { fontSize: "26px", color: "#ffe66d", align: "center", fontStyle: "bold" },
+        this.cameras.main.scrollY + height / 2 - 140,
+        "Keep Cleared!\nThe Brute falls — collect its spoils.",
+        { fontSize: "22px", color: "#ffe66d", align: "center", fontStyle: "bold" },
       )
       .setOrigin(0.5)
       .setScrollFactor(0)
-      .setDepth(3000);
+      .setDepth(3000)
+      .setAlpha(0);
 
-    this.time.delayedCall(2200, () => {
-      this.scene.start("Town", { spawnCol: TOWN_LEVEL.playerStart.col, spawnRow: TOWN_LEVEL.playerStart.row });
+    this.tweens.add({
+      targets: text,
+      alpha: 1,
+      duration: 300,
+      yoyo: true,
+      hold: 2200,
+      onComplete: () => text.destroy(),
     });
   }
 

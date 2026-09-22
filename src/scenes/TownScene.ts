@@ -3,7 +3,13 @@ import { TOWN_LEVEL } from "../data/levels";
 import { Player } from "../entities/Player";
 import { InputController } from "../systems/InputController";
 import { playerCharacter } from "../systems/gameState";
-import { buildLevelGeometry, createExitZones, tileToWorld, type ExitZone } from "./levelUtils";
+import {
+  buildLevelGeometry,
+  createExitZones,
+  tileToWorld,
+  wireCharacterSheetOpener,
+  type ExitZone,
+} from "./levelUtils";
 
 interface SceneEntryData {
   spawnCol?: number;
@@ -36,6 +42,7 @@ export class TownScene extends Phaser.Scene {
     this.cameras.main.startFollow(this.player, true, 0.12, 0.12);
 
     this.inputController = new InputController(this);
+    wireCharacterSheetOpener(this, this.player);
 
     this.exitZones = createExitZones(this, level);
     for (const { zone, exit } of this.exitZones) {
