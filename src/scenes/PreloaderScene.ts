@@ -43,6 +43,13 @@ export class PreloaderScene extends Phaser.Scene {
     g.fillRect(0, 0, 16, 16);
     g.generateTexture("tex-pickup", 16, 16);
 
+    g.clear();
+    g.fillStyle(0xd4af37, 1);
+    g.fillTriangle(16, 0, 32, 32, 0, 32);
+    g.lineStyle(2, 0xfff0a0, 1);
+    g.strokeTriangle(16, 0, 32, 32, 0, 32);
+    g.generateTexture("tex-vendor", 32, 32);
+
     g.destroy();
 
     this.scene.start("Town");
