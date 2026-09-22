@@ -1,4 +1,5 @@
 import type { ItemInstance } from "./Item";
+import type { QuestProgress } from "./Quest";
 
 export interface CharacterStats {
   maxHp: number;
@@ -36,4 +37,5 @@ export interface Character {
   baseStats: CharacterStats;
   equipped: Partial<Record<EquipSlot, ItemInstance>>;
   inventory: ItemInstance[];
+  quests: Record<string, QuestProgress>;
 }

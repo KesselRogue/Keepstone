@@ -8,6 +8,7 @@ export interface ItemDefinition {
   category: ItemCategory;
   color: number;
   baseStatRanges: Partial<Record<keyof CharacterStats, [min: number, max: number]>>;
+  lore: string;
 }
 
 export interface ItemInstance {
@@ -18,4 +19,5 @@ export interface ItemInstance {
   color: number;
   rarity: Rarity;
   rolledStats: Partial<Record<keyof CharacterStats, number>>;
+  lore: string;
 }

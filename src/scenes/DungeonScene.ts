@@ -12,7 +12,15 @@ import { resolveAttack } from "../systems/CombatSystem";
 import { grantXp } from "../systems/LevelingSystem";
 import { rollDrop } from "../systems/LootSystem";
 import { defaultRng } from "../utils/rng";
-import { buildLevelGeometry, createExitZones, tileToWorld, wireCharacterSheetOpener, type ExitZone } from "./levelUtils";
+import {
+  buildLevelGeometry,
+  createExitZones,
+  tileToWorld,
+  wireCharacterSheetOpener,
+  wireQuestLogOpener,
+  type ExitZone,
+} from "./levelUtils";
+import { recordKill } from "../systems/QuestSystem";
 import { threeLayer } from "../three/threeLayer";
 import { buildLevel3D } from "../three/LevelBuilder";
 import { DUNGEON_THEME_3D } from "../three/themes3D";
@@ -55,6 +63,7 @@ export class DungeonScene extends Phaser.Scene {
 
     this.inputController = new InputController(this);
     wireCharacterSheetOpener(this, this.player);
+    wireQuestLogOpener(this);
 
     threeLayer.setLevelGroup(buildLevel3D(level, DUNGEON_THEME_3D));
     threeLayer.chaseCamera?.setBounds({
@@ -141,6 +150,7 @@ export class DungeonScene extends Phaser.Scene {
 
     const result = grantXp(this.player.character, enemy.def.xpReward);
     if (result.leveledUp) this.game.events.emit("level-up", result.newLevel);
+    recordKill(this.player.character, enemy.def.id);
 
     // Boss kills are guaranteed epic — grunts still roll the normal rarity table.
     const drop = rollDrop(enemy.def, defaultRng, isBrute ? "epic" : undefined);

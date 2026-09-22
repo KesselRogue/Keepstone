@@ -39,6 +39,8 @@ export class UIScene extends Phaser.Scene {
     const effective = getEffectiveStats(playerCharacter);
     this.healthBar.setValue(effective.hp, effective.maxHp, `HP ${Math.ceil(effective.hp)} / ${Math.ceil(effective.maxHp)}`);
     this.xpBar.setValue(playerCharacter.xp, playerCharacter.xpToNextLevel, `Lv ${playerCharacter.level}`);
-    this.charHint.setText(`[C] Character (${playerCharacter.inventory.length})   ${playerCharacter.gold}g`);
+    this.charHint.setText(
+      `[C] Character (${playerCharacter.inventory.length})   [J] Quests   ${playerCharacter.gold}g`,
+    );
   }
 }

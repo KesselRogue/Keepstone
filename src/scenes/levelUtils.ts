@@ -106,3 +106,11 @@ export function wireCharacterSheetOpener(scene: Phaser.Scene, player: Phaser.Gam
     if (isClickNearWorldPoint(pointer.x, pointer.y, worldPos, camera, LOGICAL_WIDTH, LOGICAL_HEIGHT)) open();
   });
 }
+
+/** Wires the "J" key to open the quest journal, pausing this scene underneath it. */
+export function wireQuestLogOpener(scene: Phaser.Scene): void {
+  scene.input.keyboard?.on("keydown-J", () => {
+    scene.scene.pause();
+    scene.scene.launch("QuestLog", { returnScene: scene.scene.key });
+  });
+}

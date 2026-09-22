@@ -5,7 +5,16 @@ import type { LevelDefinition } from "../types/Level";
 import { Player } from "../entities/Player";
 import { InputController } from "../systems/InputController";
 import { playerCharacter } from "../systems/gameState";
-import { buildLevelGeometry, createExitZones, tileToWorld, wireCharacterSheetOpener, TOWN_THEME, type ExitZone } from "./levelUtils";
+import {
+  buildLevelGeometry,
+  createExitZones,
+  tileToWorld,
+  wireCharacterSheetOpener,
+  wireQuestLogOpener,
+  TOWN_THEME,
+  type ExitZone,
+} from "./levelUtils";
+import { ELDER_NPC_ID } from "../data/quests";
 import type { VendorId } from "../data/vendor";
 import { threeLayer } from "../three/threeLayer";
 import { buildLevel3D } from "../three/LevelBuilder";
@@ -32,12 +41,19 @@ interface VendorNpc {
   billboard: Billboard | null;
 }
 
+interface TalkNpc {
+  npcId: string;
+  worldPos: THREE.Vector3;
+  billboard: Billboard | null;
+}
+
 export class TownScene extends Phaser.Scene {
   private player!: Player;
   private inputController!: InputController;
   private exitZones: ExitZone[] = [];
   private transitioning = false;
   private vendorNpcs: VendorNpc[] = [];
+  private talkNpcs: TalkNpc[] = [];
 
   constructor() {
     super("Town");
@@ -46,6 +62,7 @@ export class TownScene extends Phaser.Scene {
   create(data: SceneEntryData): void {
     this.transitioning = false;
     this.vendorNpcs = [];
+    this.talkNpcs = [];
     const level = TOWN_LEVEL;
     const built = buildLevelGeometry(this, level, TOWN_THEME);
     this.physics.world.setBounds(0, 0, built.widthPx, built.heightPx);
@@ -67,6 +84,7 @@ export class TownScene extends Phaser.Scene {
 
     this.inputController = new InputController(this);
     wireCharacterSheetOpener(this, this.player);
+    wireQuestLogOpener(this);
 
     threeLayer.setLevelGroup(buildLevel3D(level, TOWN_THEME_3D));
     threeLayer.chaseCamera?.setBounds({
@@ -85,10 +103,11 @@ export class TownScene extends Phaser.Scene {
     this.spawnVendorNpc(level, "weapons", level.playerStart.col + 4, level.playerStart.row + 1);
     this.spawnVendorNpc(level, "armor", level.playerStart.col - 4, level.playerStart.row + 1);
     this.spawnVendorNpc(level, "jewelry", level.playerStart.col + 4, level.playerStart.row + 4);
+    this.spawnTalkNpc(level, ELDER_NPC_ID, "assets/sprites/npc-elder.png", level.playerStart.col, level.playerStart.row + 6);
 
-    // Vendor clicks can't use Phaser's setInteractive() hit testing — same
-    // reason as the player avatar click in wireCharacterSheetOpener (see
-    // levelUtils.ts): it's based on Phaser's own 2D camera, which no
+    // Vendor/NPC clicks can't use Phaser's setInteractive() hit testing —
+    // same reason as the player avatar click in wireCharacterSheetOpener
+    // (see levelUtils.ts): it's based on Phaser's own 2D camera, which no
     // longer matches where the billboards actually appear on screen.
     this.input.on("pointerdown", (pointer: Phaser.Input.Pointer) => {
       const camera = threeLayer.context?.camera;
@@ -100,11 +119,20 @@ export class TownScene extends Phaser.Scene {
           return;
         }
       }
+      for (const npc of this.talkNpcs) {
+        if (isClickNearWorldPoint(pointer.x, pointer.y, npc.worldPos, camera, LOGICAL_WIDTH, LOGICAL_HEIGHT)) {
+          this.scene.pause();
+          this.scene.launch("Dialogue", { returnScene: this.scene.key, npcId: npc.npcId });
+          return;
+        }
+      }
     });
 
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       for (const npc of this.vendorNpcs) if (npc.billboard) threeLayer.context?.scene.remove(npc.billboard.sprite);
+      for (const npc of this.talkNpcs) if (npc.billboard) threeLayer.context?.scene.remove(npc.billboard.sprite);
       this.vendorNpcs = [];
+      this.talkNpcs = [];
     });
   }
 
@@ -120,6 +148,20 @@ export class TownScene extends Phaser.Scene {
     }
 
     this.vendorNpcs.push({ vendorId, worldPos, billboard });
+  }
+
+  private spawnTalkNpc(level: LevelDefinition, npcId: string, textureUrl: string, col: number, row: number): void {
+    const pos = tileToWorld(level, col, row);
+    const worldPos = new THREE.Vector3(toThreeX(pos.x), 0.45, toThreeZ(pos.y));
+
+    let billboard: Billboard | null = null;
+    if (threeLayer.context) {
+      billboard = new Billboard(pos, textureUrl, 0.9, 0.9);
+      billboard.update();
+      threeLayer.context.scene.add(billboard.sprite);
+    }
+
+    this.talkNpcs.push({ npcId, worldPos, billboard });
   }
 
   private handleExit(toScene: string, toSpawn: { col: number; row: number }): void {

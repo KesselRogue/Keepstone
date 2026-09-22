@@ -14,7 +14,7 @@ function toHex(color: number): string {
 }
 
 const PANEL_W = 300;
-const PANEL_H = 260;
+const PANEL_H = 320;
 const DEPTH = 5000;
 
 /** A click-to-open detail popup showing everything about an item: icon,
@@ -94,7 +94,20 @@ export class ItemCard {
       .setDepth(DEPTH + 2);
     closeBtn.on("pointerdown", () => this.hide());
 
-    this.objects.push(backdrop, panel, iconBorder, icon, nameText, metaText, statsText, closeBtn);
+    const loreDivider = this.scene.add
+      .rectangle(left + PANEL_W / 2, top + 186, PANEL_W - 32, 1, 0xffffff, 0.15)
+      .setDepth(DEPTH + 2);
+    const loreText = this.scene.add
+      .text(left + 20, top + 198, item.lore, {
+        fontSize: "11px",
+        fontStyle: "italic",
+        color: "#9a9aa8",
+        wordWrap: { width: PANEL_W - 40 },
+        lineSpacing: 4,
+      })
+      .setDepth(DEPTH + 2);
+
+    this.objects.push(backdrop, panel, iconBorder, icon, nameText, metaText, statsText, loreDivider, loreText, closeBtn);
 
     const btnW = (PANEL_W - 20 * (actions.length + 1)) / Math.max(actions.length, 1);
     actions.forEach((action, i) => {

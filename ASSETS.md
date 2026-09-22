@@ -7,9 +7,10 @@
 - Used for: `public/assets/sprites/player.png`, `skulker.png`, `brute.png`,
   `icon-weapon.png`, `icon-shield.png`, `vendor-weaponsmith.png` (dwarf),
   `vendor-armorer.png` (plumed knight), `vendor-jeweler.png` (woman in
-  purple), and `public/assets/tiles/wall.png`, `floor.png`, `floor-alt.png`
-  — each cropped from the pack's tilemap and resized to this project's
-  target pixel dimensions.
+  purple), `npc-elder.png` (purple-robed bearded elder — the town's quest
+  giver, Elder Maren), and `public/assets/tiles/wall.png`, `floor.png`,
+  `floor-alt.png` — each cropped from the pack's tilemap and resized to
+  this project's target pixel dimensions.
 
 ## Tiny Town (Kenney)
 

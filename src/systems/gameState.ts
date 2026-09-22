@@ -12,6 +12,7 @@ export const playerCharacter: Character = {
   baseStats: { ...STARTING_STATS },
   equipped: {},
   inventory: [],
+  quests: {},
 };
 
 loadInto(playerCharacter);

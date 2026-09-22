@@ -37,6 +37,7 @@ export class PreloaderScene extends Phaser.Scene {
     this.load.image("tex-door-tan-double", "assets/sprites/door-tan-double.png");
     this.load.image("tex-door-gray", "assets/sprites/door-gray.png");
     this.load.image("tex-window-tan", "assets/sprites/window-tan.png");
+    this.load.image("tex-npc-elder", "assets/sprites/npc-elder.png");
   }
 
   async create(): Promise<void> {

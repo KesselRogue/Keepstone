@@ -9,14 +9,14 @@ import { CATEGORY_ICON } from "../ui/itemIcons";
 import { ItemCard } from "../ui/ItemCard";
 
 const STOCK_X = 70;
-const STOCK_Y = 110;
+const STOCK_Y = 128;
 const STOCK_COLS = 3;
-const STOCK_CELL = 100;
+const STOCK_CELL = 92;
 
 const INV_X = 470;
-const INV_Y = 110;
+const INV_Y = 128;
 const INV_COLS = 3;
-const INV_CELL = 100;
+const INV_CELL = 92;
 
 interface VendorEntryData {
   returnScene: string;
@@ -47,13 +47,23 @@ export class VendorScene extends Phaser.Scene {
       .setOrigin(0.5)
       .setDepth(1);
     this.add
-      .text(400, 50, "[ESC] to close   •   click an item for details", {
+      .text(400, 48, `"${def.greeting}"`, {
         fontSize: "12px",
+        fontStyle: "italic",
         color: "#aaaaaa",
+        wordWrap: { width: 560 },
+        align: "center",
       })
       .setOrigin(0.5)
       .setDepth(1);
-    this.goldText = this.add.text(400, 74, "", { fontSize: "14px", color: "#ffe66d" }).setOrigin(0.5).setDepth(1);
+    this.add
+      .text(400, 82, "[ESC] to close   •   click an item for details", {
+        fontSize: "11px",
+        color: "#777777",
+      })
+      .setOrigin(0.5)
+      .setDepth(1);
+    this.goldText = this.add.text(400, 100, "", { fontSize: "14px", color: "#ffe66d" }).setOrigin(0.5).setDepth(1);
 
     this.add.text(STOCK_X, STOCK_Y - 24, "For Sale", { fontSize: "14px", color: "#cccccc" }).setDepth(1);
     this.add.text(INV_X, INV_Y - 24, "Your Items", { fontSize: "14px", color: "#cccccc" }).setDepth(1);

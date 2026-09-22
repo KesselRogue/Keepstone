@@ -6,6 +6,8 @@ import { DungeonScene } from "../scenes/DungeonScene";
 import { UIScene } from "../scenes/UIScene";
 import { CharacterScene } from "../scenes/CharacterScene";
 import { VendorScene } from "../scenes/VendorScene";
+import { DialogueScene } from "../scenes/DialogueScene";
+import { QuestLogScene } from "../scenes/QuestLogScene";
 
 export const gameConfig: Phaser.Types.Core.GameConfig = {
   type: Phaser.AUTO,
@@ -28,5 +30,15 @@ export const gameConfig: Phaser.Types.Core.GameConfig = {
       debug: false,
     },
   },
-  scene: [BootScene, PreloaderScene, TownScene, DungeonScene, UIScene, CharacterScene, VendorScene],
+  scene: [
+    BootScene,
+    PreloaderScene,
+    TownScene,
+    DungeonScene,
+    UIScene,
+    CharacterScene,
+    VendorScene,
+    DialogueScene,
+    QuestLogScene,
+  ],
 };

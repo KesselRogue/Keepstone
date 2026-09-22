@@ -22,6 +22,7 @@ interface VendorDef {
   name: string;
   color: number;
   textureKey: string;
+  greeting: string;
   stock: StockEntry[];
   seed: number;
 }
@@ -32,6 +33,7 @@ export const VENDOR_DEFS: Record<VendorId, VendorDef> = {
     name: "Weaponsmith",
     color: 0xcc5544,
     textureKey: "tex-vendor-weapons",
+    greeting: "Half of what's on this rack came up out of the keep with someone still holding it. I clean them up, no questions asked.",
     seed: 20260101,
     stock: [
       { defId: "rusty_blade", rarity: "common" },
@@ -46,6 +48,7 @@ export const VENDOR_DEFS: Record<VendorId, VendorDef> = {
     name: "Armorer",
     color: 0x6ab0ff,
     textureKey: "tex-vendor-armor",
+    greeting: "The old Order's plate turns up in the strangest condition. Some of it barely scratched, some of it barely holding together.",
     seed: 20260102,
     stock: [
       { defId: "leather_cap", rarity: "common" },
@@ -69,6 +72,7 @@ export const VENDOR_DEFS: Record<VendorId, VendorDef> = {
     name: "Jeweler",
     color: 0xd06ad0,
     textureKey: "tex-vendor-jewelry",
+    greeting: "Rings, charms, old Keeper amulets — trinkets like these outlast whoever wore them. I try not to think too hard about that.",
     seed: 20260103,
     stock: [
       { defId: "signet_ring", rarity: "common" },

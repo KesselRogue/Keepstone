@@ -32,6 +32,7 @@ export function rollItemInstance(defId: string, rarity: Rarity, rng: () => numbe
     color: def.color,
     rarity,
     rolledStats,
+    lore: def.lore,
   };
 }
 
