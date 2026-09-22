@@ -32,6 +32,7 @@ export interface Character {
   level: number;
   xp: number;
   xpToNextLevel: number;
+  gold: number;
   baseStats: CharacterStats;
   equipped: Partial<Record<EquipSlot, ItemInstance>>;
   inventory: ItemInstance[];

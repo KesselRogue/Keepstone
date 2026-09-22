@@ -1,7 +1,7 @@
 import Phaser from "phaser";
 import type { EquipSlot } from "../types/Character";
-import { playerCharacter } from "../systems/gameState";
-import { getEffectiveStats, equipItem, unequipItem } from "../systems/InventorySystem";
+import { playerCharacter, persistCharacter } from "../systems/gameState";
+import { getEffectiveStats, equipItem, unequipItem, sellItem, destroyItem } from "../systems/InventorySystem";
 import { RARITY_CONFIG } from "../data/rarity";
 
 interface SlotLayoutEntry {
@@ -31,6 +31,8 @@ const INV_GRID_X = 470;
 const INV_GRID_Y = 110;
 const INV_COLS = 5;
 const INV_CELL = 62;
+const SELL_ZONE = { x: 545, y: 560, w: 150, h: 46 };
+const DESTROY_ZONE = { x: 705, y: 560, w: 150, h: 46 };
 
 export class CharacterScene extends Phaser.Scene {
   private returnSceneKey = "Town";
@@ -51,18 +53,19 @@ export class CharacterScene extends Phaser.Scene {
       .setOrigin(0.5)
       .setDepth(1);
     this.add
-      .text(400, 50, "[C] or [ESC] to close   •   drag items to equip / unequip", {
+      .text(400, 50, "[C] or [ESC] to close   •   drag items to equip / unequip / sell / destroy", {
         fontSize: "12px",
         color: "#aaaaaa",
       })
       .setOrigin(0.5)
       .setDepth(1);
 
-    this.statsText = this.add.text(470, 500, "", { fontSize: "13px", color: "#dddddd", lineSpacing: 4 }).setDepth(1);
+    this.statsText = this.add.text(470, 478, "", { fontSize: "13px", color: "#dddddd", lineSpacing: 4 }).setDepth(1);
 
     this.drawDoll();
     this.drawSlotBoxes();
     this.drawInventoryArea();
+    this.drawSellDestroyZones();
 
     this.input.on("drag", (_p: Phaser.Input.Pointer, obj: Phaser.GameObjects.Rectangle, dragX: number, dragY: number) => {
       obj.x = dragX;
@@ -125,6 +128,32 @@ export class CharacterScene extends Phaser.Scene {
     zone.setData("kind", "inventory-area");
   }
 
+  private drawSellDestroyZones(): void {
+    this.add
+      .rectangle(SELL_ZONE.x, SELL_ZONE.y, SELL_ZONE.w, SELL_ZONE.h, 0x1a3320, 0.8)
+      .setStrokeStyle(2, 0x3fd15e)
+      .setDepth(1);
+    this.add
+      .text(SELL_ZONE.x, SELL_ZONE.y, "SELL\ndrag item here for gold", { fontSize: "11px", color: "#8fe0a0", align: "center" })
+      .setOrigin(0.5)
+      .setDepth(2);
+    const sellZone = this.add.zone(SELL_ZONE.x, SELL_ZONE.y, SELL_ZONE.w, SELL_ZONE.h).setRectangleDropZone(SELL_ZONE.w, SELL_ZONE.h);
+    sellZone.setData("kind", "sell");
+
+    this.add
+      .rectangle(DESTROY_ZONE.x, DESTROY_ZONE.y, DESTROY_ZONE.w, DESTROY_ZONE.h, 0x331a1a, 0.8)
+      .setStrokeStyle(2, 0xd23c3c)
+      .setDepth(1);
+    this.add
+      .text(DESTROY_ZONE.x, DESTROY_ZONE.y, "DESTROY\ndrag item here to discard", { fontSize: "11px", color: "#e08f8f", align: "center" })
+      .setOrigin(0.5)
+      .setDepth(2);
+    const destroyZone = this.add
+      .zone(DESTROY_ZONE.x, DESTROY_ZONE.y, DESTROY_ZONE.w, DESTROY_ZONE.h)
+      .setRectangleDropZone(DESTROY_ZONE.w, DESTROY_ZONE.h);
+    destroyZone.setData("kind", "destroy");
+  }
+
   private renderIcons(): void {
     for (const obj of this.iconObjects) obj.destroy();
     this.iconObjects = [];
@@ -172,7 +201,8 @@ export class CharacterScene extends Phaser.Scene {
       .filter(([, v]) => v)
       .map(([k, v]) => `${k} +${v}`)
       .join("  ");
-    this.statsText.setText(`${name} (${rarity})\n${statLine}`);
+    const sellValue = RARITY_CONFIG[rarity as keyof typeof RARITY_CONFIG].sellValue;
+    this.statsText.setText(`${name} (${rarity})\n${statLine}   •   sells for ${sellValue}g`);
   }
 
   private summaryText(): string {
@@ -184,7 +214,13 @@ export class CharacterScene extends Phaser.Scene {
       `DEF ${s.defense}`,
       `SPD ${Math.round(s.moveSpeed)}`,
       `CRIT ${Math.round(s.critChance * 100)}%`,
+      `Gold ${playerCharacter.gold}`,
     ].join("   ");
+  }
+
+  private floatingText(x: number, y: number, text: string, color: string): void {
+    const t = this.add.text(x, y, text, { fontSize: "14px", color, fontStyle: "bold" }).setOrigin(0.5).setDepth(3000);
+    this.tweens.add({ targets: t, y: y - 30, alpha: 0, duration: 800, onComplete: () => t.destroy() });
   }
 
   private handleDrop(icon: Phaser.GameObjects.Rectangle, zone: Phaser.GameObjects.Zone): void {
@@ -198,8 +234,15 @@ export class CharacterScene extends Phaser.Scene {
     if (zoneKind === "slot") {
       const targetSlot = zone.getData("slot") as EquipSlot;
       equipItem(character, instanceId, targetSlot);
+    } else if (zoneKind === "sell") {
+      const gold = sellItem(character, instanceId);
+      if (gold > 0) this.floatingText(SELL_ZONE.x, SELL_ZONE.y, `+${gold}g`, "#8fe0a0");
+    } else if (zoneKind === "destroy") {
+      destroyItem(character, instanceId);
     }
     // zoneKind === "inventory-area": unequip above already handled it, nothing more to do.
+
+    persistCharacter();
   }
 
   private close(): void {

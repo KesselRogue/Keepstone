@@ -5,7 +5,7 @@ import { Enemy } from "../entities/Enemy";
 import { Skulker } from "../entities/enemies/Skulker";
 import { Brute } from "../entities/enemies/Brute";
 import { InputController } from "../systems/InputController";
-import { playerCharacter } from "../systems/gameState";
+import { playerCharacter, persistCharacter } from "../systems/gameState";
 import { getEffectiveStats, addItem } from "../systems/InventorySystem";
 import { resolveAttack } from "../systems/CombatSystem";
 import { grantXp } from "../systems/LevelingSystem";
@@ -143,6 +143,7 @@ export class DungeonScene extends Phaser.Scene {
     }
 
     enemy.destroy();
+    persistCharacter();
 
     if (isBrute) this.showVictoryBanner();
   }
@@ -178,6 +179,7 @@ export class DungeonScene extends Phaser.Scene {
     if (item) {
       addItem(this.player.character, item);
       this.game.events.emit("item-pickup", item);
+      persistCharacter();
     }
     sprite.destroy();
   }

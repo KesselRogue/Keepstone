@@ -1,5 +1,6 @@
 import type { Character, CharacterStats, EquipSlot, ItemCategory } from "../types/Character";
 import type { ItemInstance } from "../types/Item";
+import { RARITY_CONFIG } from "../data/rarity";
 
 const STAT_KEYS: (keyof CharacterStats)[] = [
   "maxHp",
@@ -59,4 +60,22 @@ export function unequipItem(character: Character, slot: EquipSlot): void {
   if (!item) return;
   delete character.equipped[slot];
   character.inventory.push(item);
+}
+
+/** Sells an inventory item for gold (by rarity tier). Returns the gold gained, or 0 if not found. */
+export function sellItem(character: Character, instanceId: string): number {
+  const idx = character.inventory.findIndex((i) => i.instanceId === instanceId);
+  if (idx === -1) return 0;
+  const [item] = character.inventory.splice(idx, 1);
+  const value = RARITY_CONFIG[item.rarity].sellValue;
+  character.gold += value;
+  return value;
+}
+
+/** Permanently discards an inventory item for nothing. Returns whether it was found. */
+export function destroyItem(character: Character, instanceId: string): boolean {
+  const idx = character.inventory.findIndex((i) => i.instanceId === instanceId);
+  if (idx === -1) return false;
+  character.inventory.splice(idx, 1);
+  return true;
 }

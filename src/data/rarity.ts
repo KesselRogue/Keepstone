@@ -6,6 +6,7 @@ export interface RarityConfig {
   color: number;
   statMultiplier: [min: number, max: number];
   dropWeight: number;
+  sellValue: number;
 }
 
 export const RARITY_ORDER: Rarity[] = ["common", "uncommon", "rare", "epic"];
@@ -17,6 +18,7 @@ export const RARITY_CONFIG: Record<Rarity, RarityConfig> = {
     color: 0x9d9d9d,
     statMultiplier: [0.9, 1.1],
     dropWeight: 60,
+    sellValue: 5,
   },
   uncommon: {
     tier: "uncommon",
@@ -24,6 +26,7 @@ export const RARITY_CONFIG: Record<Rarity, RarityConfig> = {
     color: 0x3fd15e,
     statMultiplier: [1.15, 1.35],
     dropWeight: 28,
+    sellValue: 15,
   },
   rare: {
     tier: "rare",
@@ -31,6 +34,7 @@ export const RARITY_CONFIG: Record<Rarity, RarityConfig> = {
     color: 0x4a90ff,
     statMultiplier: [1.45, 1.75],
     dropWeight: 10,
+    sellValue: 40,
   },
   epic: {
     tier: "epic",
@@ -38,6 +42,7 @@ export const RARITY_CONFIG: Record<Rarity, RarityConfig> = {
     color: 0xb14aff,
     statMultiplier: [1.9, 2.3],
     dropWeight: 2,
+    sellValue: 100,
   },
 };
 
