@@ -1,6 +1,7 @@
 import Phaser from "phaser";
 import { ENEMY_DEFS } from "../data/enemies";
 import { TOWN_LEVEL } from "../data/levels";
+import { VENDOR_DEFS } from "../data/vendor";
 
 /**
  * No art budget yet, so every texture is generated at runtime from
@@ -43,12 +44,38 @@ export class PreloaderScene extends Phaser.Scene {
     g.fillRect(0, 0, 16, 16);
     g.generateTexture("tex-pickup", 16, 16);
 
+    // Weaponsmith: a simple sword silhouette.
     g.clear();
-    g.fillStyle(0xd4af37, 1);
-    g.fillTriangle(16, 0, 32, 32, 0, 32);
-    g.lineStyle(2, 0xfff0a0, 1);
-    g.strokeTriangle(16, 0, 32, 32, 0, 32);
-    g.generateTexture("tex-vendor", 32, 32);
+    g.fillStyle(VENDOR_DEFS.weapons.color, 1);
+    g.fillRect(14, 2, 4, 20); // blade
+    g.fillRect(8, 20, 16, 4); // crossguard
+    g.fillRect(14, 24, 4, 6); // grip
+    g.generateTexture(VENDOR_DEFS.weapons.textureKey, 32, 32);
+
+    // Armorer: a shield silhouette.
+    const shieldPoints = [
+      new Phaser.Math.Vector2(4, 4),
+      new Phaser.Math.Vector2(28, 4),
+      new Phaser.Math.Vector2(28, 16),
+      new Phaser.Math.Vector2(16, 30),
+      new Phaser.Math.Vector2(4, 16),
+    ];
+    g.clear();
+    g.fillStyle(VENDOR_DEFS.armor.color, 1);
+    g.fillPoints(shieldPoints, true);
+    g.generateTexture(VENDOR_DEFS.armor.textureKey, 32, 32);
+
+    // Jeweler: a gem/diamond silhouette.
+    const gemPoints = [
+      new Phaser.Math.Vector2(16, 2),
+      new Phaser.Math.Vector2(28, 14),
+      new Phaser.Math.Vector2(16, 30),
+      new Phaser.Math.Vector2(4, 14),
+    ];
+    g.clear();
+    g.fillStyle(VENDOR_DEFS.jewelry.color, 1);
+    g.fillPoints(gemPoints, true);
+    g.generateTexture(VENDOR_DEFS.jewelry.textureKey, 32, 32);
 
     g.destroy();
 
