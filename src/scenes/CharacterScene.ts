@@ -1,8 +1,11 @@
 import Phaser from "phaser";
 import type { EquipSlot } from "../types/Character";
+import type { ItemInstance } from "../types/Item";
 import { playerCharacter, persistCharacter } from "../systems/gameState";
 import { getEffectiveStats, equipItem, unequipItem, sellItem, destroyItem } from "../systems/InventorySystem";
 import { RARITY_CONFIG } from "../data/rarity";
+import { CATEGORY_ICON } from "../ui/itemIcons";
+import { ItemCard } from "../ui/ItemCard";
 
 interface SlotLayoutEntry {
   slot: EquipSlot;
@@ -38,6 +41,7 @@ export class CharacterScene extends Phaser.Scene {
   private returnSceneKey = "Town";
   private iconObjects: Phaser.GameObjects.GameObject[] = [];
   private statsText!: Phaser.GameObjects.Text;
+  private itemCard!: ItemCard;
 
   constructor() {
     super("Character");
@@ -46,6 +50,11 @@ export class CharacterScene extends Phaser.Scene {
   create(data: { returnScene: string }): void {
     this.returnSceneKey = data?.returnScene ?? "Town";
     this.iconObjects = [];
+    this.itemCard = new ItemCard(this);
+    // Phaser's default drag threshold is 0px, so any sub-pixel jitter
+    // during a plain click gets misread as a drag — give clicks a little
+    // room so click-for-details and drag-to-equip don't fight each other.
+    this.input.dragDistanceThreshold = 6;
 
     this.add.rectangle(0, 0, 800, 600, 0x000000, 0.78).setOrigin(0, 0).setDepth(0);
     this.add
@@ -53,7 +62,7 @@ export class CharacterScene extends Phaser.Scene {
       .setOrigin(0.5)
       .setDepth(1);
     this.add
-      .text(400, 50, "[C] or [ESC] to close   •   drag items to equip / unequip / sell / destroy", {
+      .text(400, 50, "[C] or [ESC] to close   •   click for details, drag to equip / unequip / sell / destroy", {
         fontSize: "12px",
         color: "#aaaaaa",
       })
@@ -67,13 +76,21 @@ export class CharacterScene extends Phaser.Scene {
     this.drawInventoryArea();
     this.drawSellDestroyZones();
 
-    this.input.on("drag", (_p: Phaser.Input.Pointer, obj: Phaser.GameObjects.Rectangle, dragX: number, dragY: number) => {
-      obj.x = dragX;
-      obj.y = dragY;
-    });
+    this.input.on("dragstart", (_p: Phaser.Input.Pointer, obj: Phaser.GameObjects.GameObject) =>
+      obj.setData("wasDragged", true),
+    );
+    this.input.on(
+      "drag",
+      (_p: Phaser.Input.Pointer, obj: Phaser.GameObjects.Image, dragX: number, dragY: number) => {
+        obj.x = dragX;
+        obj.y = dragY;
+        const bg = obj.getData("bg") as Phaser.GameObjects.Rectangle | undefined;
+        if (bg) bg.setPosition(dragX, dragY);
+      },
+    );
     this.input.on(
       "drop",
-      (_p: Phaser.Input.Pointer, obj: Phaser.GameObjects.Rectangle, zone: Phaser.GameObjects.Zone) => {
+      (_p: Phaser.Input.Pointer, obj: Phaser.GameObjects.Image, zone: Phaser.GameObjects.Zone) => {
         this.handleDrop(obj, zone);
       },
     );
@@ -154,6 +171,68 @@ export class CharacterScene extends Phaser.Scene {
     destroyZone.setData("kind", "destroy");
   }
 
+  private createItemIcon(item: ItemInstance, x: number, y: number, size: number, sourceSlot?: EquipSlot): void {
+    const rarity = RARITY_CONFIG[item.rarity];
+    const bg = this.add.rectangle(x, y, size, size, 0x1a1a22, 0.9).setStrokeStyle(3, rarity.color).setDepth(2);
+    const icon = this.add
+      .image(x, y, CATEGORY_ICON[item.category])
+      .setDisplaySize(size - 14, size - 14)
+      .setTint(item.color)
+      .setDepth(3)
+      .setInteractive({ useHandCursor: true });
+
+    icon.setData("instanceId", item.instanceId);
+    icon.setData("bg", bg);
+    if (sourceSlot) icon.setData("sourceSlot", sourceSlot);
+    this.input.setDraggable(icon);
+
+    icon.on("pointerover", () => this.showTooltip(item.name, item.rarity, item.rolledStats));
+    icon.on("pointerout", () => this.statsText.setText(this.summaryText()));
+    icon.on("pointerdown", () => icon.setData("wasDragged", false));
+    icon.on("pointerup", () => {
+      if (!icon.getData("wasDragged")) this.openCard(item, sourceSlot);
+    });
+
+    this.iconObjects.push(bg, icon);
+  }
+
+  private openCard(item: ItemInstance, sourceSlot?: EquipSlot): void {
+    const actions = sourceSlot
+      ? [
+          {
+            label: "Unequip",
+            color: 0x444a66,
+            onClick: () => {
+              unequipItem(playerCharacter, sourceSlot);
+              persistCharacter();
+              this.renderIcons();
+            },
+          },
+        ]
+      : [
+          {
+            label: `Sell ${RARITY_CONFIG[item.rarity].sellValue}g`,
+            color: 0x2a6b3a,
+            onClick: () => {
+              const gold = sellItem(playerCharacter, item.instanceId);
+              if (gold > 0) this.floatingText(SELL_ZONE.x, SELL_ZONE.y, `+${gold}g`, "#8fe0a0");
+              persistCharacter();
+              this.renderIcons();
+            },
+          },
+          {
+            label: "Destroy",
+            color: 0x6b2a2a,
+            onClick: () => {
+              destroyItem(playerCharacter, item.instanceId);
+              persistCharacter();
+              this.renderIcons();
+            },
+          },
+        ];
+    this.itemCard.show(item, actions);
+  }
+
   private renderIcons(): void {
     for (const obj of this.iconObjects) obj.destroy();
     this.iconObjects = [];
@@ -163,17 +242,7 @@ export class CharacterScene extends Phaser.Scene {
     for (const entry of SLOT_LAYOUT) {
       const item = character.equipped[entry.slot];
       if (!item) continue;
-      const icon = this.add
-        .rectangle(entry.x, entry.y, SLOT_BOX_SIZE - 8, SLOT_BOX_SIZE - 8, item.color)
-        .setStrokeStyle(3, RARITY_CONFIG[item.rarity].color)
-        .setDepth(2)
-        .setInteractive({ useHandCursor: true });
-      icon.setData("instanceId", item.instanceId);
-      icon.setData("sourceSlot", entry.slot);
-      this.input.setDraggable(icon);
-      icon.on("pointerover", () => this.showTooltip(item.name, item.rarity, item.rolledStats));
-      icon.on("pointerout", () => this.statsText.setText(this.summaryText()));
-      this.iconObjects.push(icon);
+      this.createItemIcon(item, entry.x, entry.y, SLOT_BOX_SIZE - 8, entry.slot);
     }
 
     character.inventory.forEach((item, i) => {
@@ -181,16 +250,7 @@ export class CharacterScene extends Phaser.Scene {
       const row = Math.floor(i / INV_COLS);
       const x = INV_GRID_X + col * INV_CELL + INV_CELL / 2 - 10;
       const y = INV_GRID_Y + row * INV_CELL + INV_CELL / 2 - 10;
-      const icon = this.add
-        .rectangle(x, y, INV_CELL - 16, INV_CELL - 16, item.color)
-        .setStrokeStyle(3, RARITY_CONFIG[item.rarity].color)
-        .setDepth(2)
-        .setInteractive({ useHandCursor: true });
-      icon.setData("instanceId", item.instanceId);
-      this.input.setDraggable(icon);
-      icon.on("pointerover", () => this.showTooltip(item.name, item.rarity, item.rolledStats));
-      icon.on("pointerout", () => this.statsText.setText(this.summaryText()));
-      this.iconObjects.push(icon);
+      this.createItemIcon(item, x, y, INV_CELL - 16);
     });
 
     this.statsText.setText(this.summaryText());
@@ -202,7 +262,7 @@ export class CharacterScene extends Phaser.Scene {
       .map(([k, v]) => `${k} +${v}`)
       .join("  ");
     const sellValue = RARITY_CONFIG[rarity as keyof typeof RARITY_CONFIG].sellValue;
-    this.statsText.setText(`${name} (${rarity})\n${statLine}   •   sells for ${sellValue}g`);
+    this.statsText.setText(`${name} (${rarity})\n${statLine}   •   sells for ${sellValue}g   •   click for details`);
   }
 
   private summaryText(): string {
@@ -223,7 +283,7 @@ export class CharacterScene extends Phaser.Scene {
     this.tweens.add({ targets: t, y: y - 30, alpha: 0, duration: 800, onComplete: () => t.destroy() });
   }
 
-  private handleDrop(icon: Phaser.GameObjects.Rectangle, zone: Phaser.GameObjects.Zone): void {
+  private handleDrop(icon: Phaser.GameObjects.Image, zone: Phaser.GameObjects.Zone): void {
     const character = playerCharacter;
     const instanceId = icon.getData("instanceId") as string;
     const sourceSlot = icon.getData("sourceSlot") as EquipSlot | undefined;

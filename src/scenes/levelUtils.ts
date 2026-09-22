@@ -1,5 +1,10 @@
 import Phaser from "phaser";
+import * as THREE from "three";
 import type { LevelDefinition, LevelExit } from "../types/Level";
+import { threeLayer } from "../three/threeLayer";
+import { isClickNearWorldPoint } from "../three/Nameplates";
+import { toThreeX, toThreeZ, LOGICAL_WIDTH, LOGICAL_HEIGHT } from "../three/coords";
+import { PLAYER_BILLBOARD } from "../three/themes3D";
 
 export interface BuiltLevel {
   walls: Phaser.Physics.Arcade.StaticGroup;
@@ -78,13 +83,26 @@ export function createExitZones(scene: Phaser.Scene, level: LevelDefinition): Ex
 }
 
 /** Wires the "C" key and a click on the player avatar to open the character sheet,
- * pausing this scene underneath it (shared by Town and Dungeon). */
+ * pausing this scene underneath it (shared by Town and Dungeon).
+ *
+ * The player's clickable area can't use Phaser's own setInteractive() hit
+ * testing anymore — that's based on Phaser's own 2D camera, which no
+ * longer matches where the player's billboard actually appears under the
+ * 3D perspective camera. Instead this checks click proximity to the
+ * billboard's projected screen position each time, same technique as the
+ * enemy HP bar projection. */
 export function wireCharacterSheetOpener(scene: Phaser.Scene, player: Phaser.GameObjects.Sprite): void {
   const open = () => {
     scene.scene.pause();
     scene.scene.launch("Character", { returnScene: scene.scene.key });
   };
   scene.input.keyboard?.on("keydown-C", open);
-  player.setInteractive({ useHandCursor: true });
-  player.on("pointerdown", open);
+
+  const worldPos = new THREE.Vector3();
+  scene.input.on("pointerdown", (pointer: Phaser.Input.Pointer) => {
+    const camera = threeLayer.context?.camera;
+    if (!camera) return;
+    worldPos.set(toThreeX(player.x), PLAYER_BILLBOARD.size / 2, toThreeZ(player.y));
+    if (isClickNearWorldPoint(pointer.x, pointer.y, worldPos, camera, LOGICAL_WIDTH, LOGICAL_HEIGHT)) open();
+  });
 }

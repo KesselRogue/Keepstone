@@ -4,17 +4,19 @@ import { sellItem, addItem } from "../systems/InventorySystem";
 import { cloneItemInstance } from "../systems/LootSystem";
 import { RARITY_CONFIG } from "../data/rarity";
 import { VENDOR_DEFS, VENDOR_STOCK, type VendorId, type VendorListing } from "../data/vendor";
-import type { CharacterStats } from "../types/Character";
+import type { ItemInstance } from "../types/Item";
+import { CATEGORY_ICON } from "../ui/itemIcons";
+import { ItemCard } from "../ui/ItemCard";
 
 const STOCK_X = 70;
 const STOCK_Y = 110;
 const STOCK_COLS = 3;
-const STOCK_CELL = 90;
+const STOCK_CELL = 100;
 
 const INV_X = 470;
 const INV_Y = 110;
 const INV_COLS = 3;
-const INV_CELL = 90;
+const INV_CELL = 100;
 
 interface VendorEntryData {
   returnScene: string;
@@ -26,7 +28,7 @@ export class VendorScene extends Phaser.Scene {
   private vendorId: VendorId = "weapons";
   private iconObjects: Phaser.GameObjects.GameObject[] = [];
   private goldText!: Phaser.GameObjects.Text;
-  private infoText!: Phaser.GameObjects.Text;
+  private itemCard!: ItemCard;
 
   constructor() {
     super("Vendor");
@@ -36,6 +38,7 @@ export class VendorScene extends Phaser.Scene {
     this.returnSceneKey = data?.returnScene ?? "Town";
     this.vendorId = data?.vendorId ?? "weapons";
     this.iconObjects = [];
+    this.itemCard = new ItemCard(this);
     const def = VENDOR_DEFS[this.vendorId];
 
     this.add.rectangle(0, 0, 800, 600, 0x000000, 0.82).setOrigin(0, 0).setDepth(0);
@@ -44,7 +47,7 @@ export class VendorScene extends Phaser.Scene {
       .setOrigin(0.5)
       .setDepth(1);
     this.add
-      .text(400, 50, "[ESC] to close   •   click an item to buy or sell", {
+      .text(400, 50, "[ESC] to close   •   click an item for details", {
         fontSize: "12px",
         color: "#aaaaaa",
       })
@@ -54,8 +57,6 @@ export class VendorScene extends Phaser.Scene {
 
     this.add.text(STOCK_X, STOCK_Y - 24, "For Sale", { fontSize: "14px", color: "#cccccc" }).setDepth(1);
     this.add.text(INV_X, INV_Y - 24, "Your Items", { fontSize: "14px", color: "#cccccc" }).setDepth(1);
-
-    this.infoText = this.add.text(60, 560, "", { fontSize: "12px", color: "#dddddd" }).setDepth(1);
 
     this.input.keyboard?.on("keydown-ESC", () => this.close());
 
@@ -76,22 +77,24 @@ export class VendorScene extends Phaser.Scene {
       const y = STOCK_Y + row * STOCK_CELL + 28;
       const canAfford = playerCharacter.gold >= listing.price;
 
-      const icon = this.add
-        .rectangle(x, y, 46, 46, listing.item.color, canAfford ? 1 : 0.35)
+      const bg = this.add
+        .rectangle(x, y, 50, 50, 0x1a1a22, canAfford ? 0.9 : 0.5)
         .setStrokeStyle(3, RARITY_CONFIG[listing.item.rarity].color)
+        .setDepth(2);
+      const icon = this.add
+        .image(x, y, CATEGORY_ICON[listing.item.category])
+        .setDisplaySize(36, 36)
+        .setTint(listing.item.color)
+        .setAlpha(canAfford ? 1 : 0.4)
         .setDepth(2)
         .setInteractive({ useHandCursor: true });
       const priceLabel = this.add
-        .text(x, y + 32, `${listing.price}g`, { fontSize: "12px", color: canAfford ? "#ffe66d" : "#888888" })
+        .text(x, y + 34, `${listing.price}g`, { fontSize: "12px", color: canAfford ? "#ffe66d" : "#888888" })
         .setOrigin(0.5)
         .setDepth(2);
 
-      icon.on("pointerover", () =>
-        this.showInfo(listing.item.name, listing.item.rarity, listing.item.rolledStats, `Price: ${listing.price}g`),
-      );
-      icon.on("pointerout", () => this.infoText.setText(""));
-      icon.on("pointerdown", () => this.buy(listing));
-      this.iconObjects.push(icon, priceLabel);
+      icon.on("pointerdown", () => this.openStockCard(listing));
+      this.iconObjects.push(bg, icon, priceLabel);
     });
 
     playerCharacter.inventory.forEach((item, i) => {
@@ -101,34 +104,49 @@ export class VendorScene extends Phaser.Scene {
       const y = INV_Y + row * INV_CELL + 26;
       const value = RARITY_CONFIG[item.rarity].sellValue;
 
-      const icon = this.add
-        .rectangle(x, y, 46, 46, item.color)
+      const bg = this.add
+        .rectangle(x, y, 50, 50, 0x1a1a22, 0.9)
         .setStrokeStyle(3, RARITY_CONFIG[item.rarity].color)
+        .setDepth(2);
+      const icon = this.add
+        .image(x, y, CATEGORY_ICON[item.category])
+        .setDisplaySize(36, 36)
+        .setTint(item.color)
         .setDepth(2)
         .setInteractive({ useHandCursor: true });
       const valueLabel = this.add
-        .text(x, y + 30, `${value}g`, { fontSize: "11px", color: "#8fe0a0" })
+        .text(x, y + 32, `${value}g`, { fontSize: "11px", color: "#8fe0a0" })
         .setOrigin(0.5)
         .setDepth(2);
 
-      icon.on("pointerover", () => this.showInfo(item.name, item.rarity, item.rolledStats, `Sells for: ${value}g`));
-      icon.on("pointerout", () => this.infoText.setText(""));
-      icon.on("pointerdown", () => this.sell(item.instanceId));
-      this.iconObjects.push(icon, valueLabel);
+      icon.on("pointerdown", () => this.openInventoryCard(item));
+      this.iconObjects.push(bg, icon, valueLabel);
     });
   }
 
-  private showInfo(
-    name: string,
-    rarity: string,
-    stats: Partial<Record<keyof CharacterStats, number>>,
-    extra: string,
-  ): void {
-    const statLine = Object.entries(stats)
-      .filter(([, v]) => v)
-      .map(([k, v]) => `${k} +${v}`)
-      .join("  ");
-    this.infoText.setText(`${name} (${rarity})   ${statLine}   •   ${extra}`);
+  private openStockCard(listing: VendorListing): void {
+    const canAfford = playerCharacter.gold >= listing.price;
+    this.itemCard.show(listing.item, [
+      {
+        label: canAfford ? `Buy ${listing.price}g` : `Need ${listing.price}g`,
+        color: canAfford ? 0x2a6b3a : 0x444444,
+        onClick: () => {
+          if (!canAfford) return;
+          this.buy(listing);
+        },
+      },
+    ]);
+  }
+
+  private openInventoryCard(item: ItemInstance): void {
+    const value = RARITY_CONFIG[item.rarity].sellValue;
+    this.itemCard.show(item, [
+      {
+        label: `Sell ${value}g`,
+        color: 0x2a6b3a,
+        onClick: () => this.sell(item.instanceId),
+      },
+    ]);
   }
 
   private buy(listing: VendorListing): void {

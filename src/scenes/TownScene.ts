@@ -1,36 +1,43 @@
 import Phaser from "phaser";
+import * as THREE from "three";
 import { TOWN_LEVEL } from "../data/levels";
 import type { LevelDefinition } from "../types/Level";
 import { Player } from "../entities/Player";
 import { InputController } from "../systems/InputController";
 import { playerCharacter } from "../systems/gameState";
 import { buildLevelGeometry, createExitZones, tileToWorld, wireCharacterSheetOpener, TOWN_THEME, type ExitZone } from "./levelUtils";
-import { VENDOR_DEFS, type VendorId } from "../data/vendor";
+import type { VendorId } from "../data/vendor";
 import { threeLayer } from "../three/threeLayer";
 import { buildLevel3D } from "../three/LevelBuilder";
 import { Billboard } from "../three/Billboard";
 import { TOWN_THEME_3D } from "../three/themes3D";
+import { isClickNearWorldPoint } from "../three/Nameplates";
+import { toThreeX, toThreeZ, LOGICAL_WIDTH, LOGICAL_HEIGHT } from "../three/coords";
 
 interface SceneEntryData {
   spawnCol?: number;
   spawnRow?: number;
 }
 
-// Vendor icon textures (weapons/armor are real PNGs; jewelry's gem is
-// procedural in Phaser with no image file — falls back to a tinted plain
-// billboard, same trick used for loot pickups).
-const VENDOR_BILLBOARD_TEXTURE: Record<VendorId, string | null> = {
-  weapons: "assets/sprites/icon-weapon.png",
-  armor: "assets/sprites/icon-shield.png",
-  jewelry: null,
+// Vendor NPC character portraits (Kenney Tiny Dungeon, CC0 — see ASSETS.md).
+const VENDOR_BILLBOARD_TEXTURE: Record<VendorId, string> = {
+  weapons: "assets/sprites/vendor-weaponsmith.png",
+  armor: "assets/sprites/vendor-armorer.png",
+  jewelry: "assets/sprites/vendor-jeweler.png",
 };
+
+interface VendorNpc {
+  vendorId: VendorId;
+  worldPos: THREE.Vector3; // fixed — vendors never move
+  billboard: Billboard | null;
+}
 
 export class TownScene extends Phaser.Scene {
   private player!: Player;
   private inputController!: InputController;
   private exitZones: ExitZone[] = [];
   private transitioning = false;
-  private vendorBillboards: Billboard[] = [];
+  private vendorNpcs: VendorNpc[] = [];
 
   constructor() {
     super("Town");
@@ -38,7 +45,7 @@ export class TownScene extends Phaser.Scene {
 
   create(data: SceneEntryData): void {
     this.transitioning = false;
-    this.vendorBillboards = [];
+    this.vendorNpcs = [];
     const level = TOWN_LEVEL;
     const built = buildLevelGeometry(this, level, TOWN_THEME);
     this.physics.world.setBounds(0, 0, built.widthPx, built.heightPx);
@@ -79,33 +86,40 @@ export class TownScene extends Phaser.Scene {
     this.spawnVendorNpc(level, "armor", level.playerStart.col - 4, level.playerStart.row + 1);
     this.spawnVendorNpc(level, "jewelry", level.playerStart.col + 4, level.playerStart.row + 4);
 
+    // Vendor clicks can't use Phaser's setInteractive() hit testing — same
+    // reason as the player avatar click in wireCharacterSheetOpener (see
+    // levelUtils.ts): it's based on Phaser's own 2D camera, which no
+    // longer matches where the billboards actually appear on screen.
+    this.input.on("pointerdown", (pointer: Phaser.Input.Pointer) => {
+      const camera = threeLayer.context?.camera;
+      if (!camera) return;
+      for (const npc of this.vendorNpcs) {
+        if (isClickNearWorldPoint(pointer.x, pointer.y, npc.worldPos, camera, LOGICAL_WIDTH, LOGICAL_HEIGHT)) {
+          this.scene.pause();
+          this.scene.launch("Vendor", { returnScene: this.scene.key, vendorId: npc.vendorId });
+          return;
+        }
+      }
+    });
+
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
-      for (const billboard of this.vendorBillboards) threeLayer.context?.scene.remove(billboard.sprite);
-      this.vendorBillboards = [];
+      for (const npc of this.vendorNpcs) if (npc.billboard) threeLayer.context?.scene.remove(npc.billboard.sprite);
+      this.vendorNpcs = [];
     });
   }
 
   private spawnVendorNpc(level: LevelDefinition, vendorId: VendorId, col: number, row: number): void {
-    const def = VENDOR_DEFS[vendorId];
     const pos = tileToWorld(level, col, row);
+    const worldPos = new THREE.Vector3(toThreeX(pos.x), 0.45, toThreeZ(pos.y));
 
-    const npc = this.add
-      .sprite(pos.x, pos.y, def.textureKey)
-      .setInteractive({ useHandCursor: true })
-      .setVisible(false); // the real visual is the Three billboard below
-
-    npc.on("pointerdown", () => {
-      this.scene.pause();
-      this.scene.launch("Vendor", { returnScene: this.scene.key, vendorId });
-    });
-
+    let billboard: Billboard | null = null;
     if (threeLayer.context) {
-      const billboard = new Billboard({ x: pos.x, y: pos.y }, VENDOR_BILLBOARD_TEXTURE[vendorId], 0.8, 0.8);
-      billboard.setTint(def.color);
+      billboard = new Billboard(pos, VENDOR_BILLBOARD_TEXTURE[vendorId], 0.9, 0.9);
       billboard.update();
       threeLayer.context.scene.add(billboard.sprite);
-      this.vendorBillboards.push(billboard);
     }
+
+    this.vendorNpcs.push({ vendorId, worldPos, billboard });
   }
 
   private handleExit(toScene: string, toSpawn: { col: number; row: number }): void {
