@@ -16,7 +16,26 @@ export function tileToWorld(level: LevelDefinition, col: number, row: number): {
   };
 }
 
-export function buildLevelGeometry(scene: Phaser.Scene, level: LevelDefinition): BuiltLevel {
+export interface LevelTheme {
+  wall: string;
+  wallAlt?: string;
+  floor: string;
+  floorAlt: string;
+}
+
+export const DUNGEON_THEME: LevelTheme = { wall: "tex-wall", floor: "tex-floor", floorAlt: "tex-floor-alt" };
+export const TOWN_THEME: LevelTheme = {
+  wall: "tex-tree-green",
+  wallAlt: "tex-tree-gold",
+  floor: "tex-grass",
+  floorAlt: "tex-grass-alt",
+};
+
+export function buildLevelGeometry(
+  scene: Phaser.Scene,
+  level: LevelDefinition,
+  theme: LevelTheme = DUNGEON_THEME,
+): BuiltLevel {
   const { tileSize, grid } = level;
   const walls = scene.physics.add.staticGroup();
 
@@ -26,9 +45,10 @@ export function buildLevelGeometry(scene: Phaser.Scene, level: LevelDefinition):
       const worldX = col * tileSize + tileSize / 2;
       const worldY = row * tileSize + tileSize / 2;
       if (line[col] === "#") {
-        walls.create(worldX, worldY, "tex-wall");
+        const wallTex = theme.wallAlt && (row + col) % 2 === 0 ? theme.wallAlt : theme.wall;
+        walls.create(worldX, worldY, wallTex);
       } else {
-        const floorTex = (row + col) % 2 === 0 ? "tex-floor" : "tex-floor-alt";
+        const floorTex = (row + col) % 2 === 0 ? theme.floor : theme.floorAlt;
         scene.add.image(worldX, worldY, floorTex).setDepth(-10);
       }
     }

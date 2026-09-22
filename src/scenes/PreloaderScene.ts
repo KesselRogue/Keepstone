@@ -2,10 +2,11 @@ import Phaser from "phaser";
 import { VENDOR_DEFS } from "../data/vendor";
 
 /**
- * World/character/icon art comes from Kenney's "Tiny Dungeon" pack (CC0,
- * kenney.nl/assets/tiny-dungeon), pre-cropped and resized in assets-src/ to
- * our target pixel dimensions. Anything that pack doesn't cover (loot
- * pickups, the jeweler's gem icon) still falls back to a Graphics shape.
+ * World/character/icon art comes from Kenney's "Tiny Dungeon" and "Tiny
+ * Town" packs (both CC0, kenney.nl), pre-cropped and resized in
+ * assets-src/ to our target pixel dimensions. Anything neither pack
+ * covers (loot pickups, the jeweler's gem icon) falls back to a Graphics
+ * shape.
  */
 export class PreloaderScene extends Phaser.Scene {
   constructor() {
@@ -21,6 +22,18 @@ export class PreloaderScene extends Phaser.Scene {
     this.load.image("tex-floor-alt", "assets/tiles/floor-alt.png");
     this.load.image(VENDOR_DEFS.weapons.textureKey, "assets/sprites/icon-weapon.png");
     this.load.image(VENDOR_DEFS.armor.textureKey, "assets/sprites/icon-shield.png");
+
+    this.load.image("tex-grass", "assets/tiles/grass.png");
+    this.load.image("tex-grass-alt", "assets/tiles/grass-alt.png");
+    this.load.image("tex-tree-green", "assets/tiles/tree-green.png");
+    this.load.image("tex-tree-gold", "assets/tiles/tree-gold.png");
+    this.load.image("tex-bush", "assets/sprites/bush.png");
+    this.load.image("tex-mushroom", "assets/sprites/mushroom.png");
+    this.load.image("tex-roof-gray", "assets/sprites/roof-gray.png");
+    this.load.image("tex-roof-red", "assets/sprites/roof-red.png");
+    this.load.image("tex-door-tan-double", "assets/sprites/door-tan-double.png");
+    this.load.image("tex-door-gray", "assets/sprites/door-gray.png");
+    this.load.image("tex-window-tan", "assets/sprites/window-tan.png");
   }
 
   create(): void {

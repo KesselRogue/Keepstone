@@ -27,4 +27,5 @@ dist-ssr
 # is actually used; the extraction scripts stay tracked for reproducibility.
 assets-src/*.zip
 assets-src/tiny-dungeon/
-assets-src/contact_sheet.png
+assets-src/tiny-town/
+assets-src/contact_sheet*.png

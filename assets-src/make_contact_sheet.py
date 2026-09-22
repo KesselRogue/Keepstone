@@ -1,6 +1,16 @@
+"""Builds an upscaled, index-labeled contact sheet from a Kenney packed
+tilemap, so individual tile indices can be identified visually before
+extracting them with extract_sprites.py / extract_town_sprites.py.
+
+Usage: python make_contact_sheet.py <path-to-tilemap_packed.png> <out.png>
+Defaults to the Tiny Dungeon sheet if no args are given.
+"""
+
+import sys
 from PIL import Image, ImageDraw
 
-SRC = "tiny-dungeon/Tilemap/tilemap_packed.png"
+SRC = sys.argv[1] if len(sys.argv) > 1 else "tiny-dungeon/Tilemap/tilemap_packed.png"
+OUT = sys.argv[2] if len(sys.argv) > 2 else "contact_sheet.png"
 COLS, ROWS, TILE = 12, 11, 16
 SCALE = 5
 PAD = 20  # space for row/col labels
@@ -28,5 +38,5 @@ for row in range(ROWS):
     idx_start = row * COLS
     draw.text((2, PAD + row * TILE * SCALE + 2), f"{row}({idx_start})", fill=(255, 255, 0, 255))
 
-out.save("contact_sheet.png")
-print("saved", out.size)
+out.save(OUT)
+print("saved", OUT, out.size)
