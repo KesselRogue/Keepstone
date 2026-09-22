@@ -1,12 +1,15 @@
 import Phaser from "phaser";
 import { VENDOR_DEFS } from "../data/vendor";
+import { preloadModel } from "../three/AssetLoader";
+import { DUNGEON_THEME_3D } from "../three/themes3D";
 
 /**
  * World/character/icon art comes from Kenney's "Tiny Dungeon" and "Tiny
  * Town" packs (both CC0, kenney.nl), pre-cropped and resized in
  * assets-src/ to our target pixel dimensions. Anything neither pack
  * covers (loot pickups, the jeweler's gem icon) falls back to a Graphics
- * shape.
+ * shape. Dungeon wall/floor 3D models are Kenney's Retro Fantasy Kit
+ * (also CC0) — see ASSETS.md.
  */
 export class PreloaderScene extends Phaser.Scene {
   constructor() {
@@ -36,7 +39,7 @@ export class PreloaderScene extends Phaser.Scene {
     this.load.image("tex-window-tan", "assets/sprites/window-tan.png");
   }
 
-  create(): void {
+  async create(): Promise<void> {
     const g = this.make.graphics({ x: 0, y: 0 });
 
     g.clear();
@@ -56,6 +59,11 @@ export class PreloaderScene extends Phaser.Scene {
     g.generateTexture(VENDOR_DEFS.jewelry.textureKey, 32, 32);
 
     g.destroy();
+
+    await Promise.all([
+      preloadModel(DUNGEON_THEME_3D.wallModelUrl!),
+      preloadModel(DUNGEON_THEME_3D.floorModelUrl!),
+    ]);
 
     this.scene.start("Town");
     this.scene.launch("UI");

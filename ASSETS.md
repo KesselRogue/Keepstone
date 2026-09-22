@@ -27,10 +27,24 @@ The original downloaded packs and extraction scripts live in `assets-src/`
 130+ tiles are useful later. `make_contact_sheet.py <tilemap_packed.png>
 <out.png>` builds an index-labeled contact sheet for picking new tiles.
 
-### Not used: Retro Fantasy Kit
+## Retro Fantasy Kit (Kenney)
 
-The user initially asked for Kenney's "Retro Fantasy Kit," but it turned out
-to be a 3D model pack (`.obj`/`.fbx`/`.glb`), not 2D sprites — incompatible
-with this project's flat-sprite Phaser setup, and there's no 3D-to-2D
-rendering tooling available to convert it. Tiny Town was used instead as a
-same-style 2D substitute.
+- Source: https://kenney.nl/assets/retro-fantasy-kit
+- License: CC0 1.0 (public domain) — https://creativecommons.org/publicdomain/zero/1.0/
+- This is a 3D model pack (`.glb`/`.obj`/`.fbx`), which is what the user
+  originally asked to use for "the surroundings" — it didn't fit the
+  project's original flat-sprite-only Phaser setup, which prompted the
+  Phaser+Three.js hybrid rendering migration (see the plan file / git log)
+  so real 3D models could actually be used.
+- Used for the dungeon's walls and floor: `public/assets/models/
+  dungeon-wall.glb` (from the pack's `wall-fortified.glb`) and
+  `dungeon-floor.glb` (from `floor.glb`), loaded via Three's GLTFLoader.
+  `public/assets/models/Textures/` holds the texture files those two
+  models reference (copied from the pack's `Models/GLB format/Textures/`
+  — GLB files can embed textures but these ship as external references).
+- The town hub still uses the Tiny Town 2D theme (grass/trees) — this kit
+  is stone-castle themed and fits the dungeon better; town's vendor
+  facades/decorations from Tiny Town are a separate, not-yet-done pass
+  (see the plan file).
+- Not required by the license, but Kenney appreciates a credit: "Retro
+  Fantasy Kit" assets by Kenney (kenney.nl).

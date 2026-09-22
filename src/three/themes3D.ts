@@ -10,6 +10,9 @@ export const DUNGEON_THEME_3D: LevelTheme3D = {
   wallColor: 0x4a4a58,
   floorColor: 0x6b3a35,
   floorColorAlt: 0x5f322c,
+  // Kenney's Retro Fantasy Kit (CC0) — see ASSETS.md.
+  wallModelUrl: "assets/models/dungeon-wall.glb",
+  floorModelUrl: "assets/models/dungeon-floor.glb",
 };
 
 export interface BillboardSpec {
