@@ -122,6 +122,8 @@ export class DungeonScene extends Phaser.Scene {
   }
 
   private handleEnemyDeath(enemy: Enemy): void {
+    const isBrute = enemy.def.id === "brute";
+
     const result = grantXp(this.player.character, enemy.def.xpReward);
     if (result.leveledUp) this.game.events.emit("level-up", result.newLevel);
 
@@ -132,6 +134,30 @@ export class DungeonScene extends Phaser.Scene {
     }
 
     enemy.destroy();
+
+    if (isBrute) this.handleVictory();
+  }
+
+  private handleVictory(): void {
+    if (this.transitioning) return;
+    this.transitioning = true;
+    this.player.setVelocity(0, 0);
+
+    const { width, height } = this.scale;
+    this.add
+      .text(
+        this.cameras.main.scrollX + width / 2,
+        this.cameras.main.scrollY + height / 2,
+        "Keep Cleared!\nThe Brute falls.",
+        { fontSize: "26px", color: "#ffe66d", align: "center", fontStyle: "bold" },
+      )
+      .setOrigin(0.5)
+      .setScrollFactor(0)
+      .setDepth(3000);
+
+    this.time.delayedCall(2200, () => {
+      this.scene.start("Town", { spawnCol: TOWN_LEVEL.playerStart.col, spawnRow: TOWN_LEVEL.playerStart.row });
+    });
   }
 
   private handlePickup(sprite: Phaser.Physics.Arcade.Sprite): void {
