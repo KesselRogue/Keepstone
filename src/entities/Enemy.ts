@@ -5,13 +5,11 @@ import { AIController, type AiDecision } from "../systems/AIController";
 import { threeLayer } from "../three/threeLayer";
 import { Billboard } from "../three/Billboard";
 import { worldToScreen } from "../three/Nameplates";
-import { toThreeX, toThreeZ } from "../three/coords";
+import { toThreeX, toThreeZ, LOGICAL_WIDTH, LOGICAL_HEIGHT } from "../three/coords";
 import { SKULKER_BILLBOARD, BRUTE_BILLBOARD } from "../three/themes3D";
 
 const HP_BAR_WIDTH = 34;
 const HP_BAR_HEIGHT = 5;
-const LOGICAL_WIDTH = 800;
-const LOGICAL_HEIGHT = 600;
 
 const headWorldPos = new THREE.Vector3();
 

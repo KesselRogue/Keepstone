@@ -8,10 +8,24 @@
  */
 export const UNITS_PER_TILE = 48;
 
+/** Must match gameConfig.ts's width/height — Phaser's logical resolution,
+ * which screen-space GameObjects and projections are positioned in
+ * (distinct from the actual CSS-rendered canvas size). */
+export const LOGICAL_WIDTH = 800;
+export const LOGICAL_HEIGHT = 600;
+
 export function toThreeX(gameX: number): number {
   return gameX / UNITS_PER_TILE;
 }
 
 export function toThreeZ(gameY: number): number {
   return gameY / UNITS_PER_TILE;
+}
+
+export function fromThreeX(threeX: number): number {
+  return threeX * UNITS_PER_TILE;
+}
+
+export function fromThreeZ(threeZ: number): number {
+  return threeZ * UNITS_PER_TILE;
 }

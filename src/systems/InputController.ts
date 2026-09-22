@@ -1,5 +1,8 @@
 import Phaser from "phaser";
 import { touchState } from "./touchState";
+import { threeLayer } from "../three/threeLayer";
+import { raycastGround } from "../three/Raycast";
+import { fromThreeX, fromThreeZ, LOGICAL_WIDTH, LOGICAL_HEIGHT } from "../three/coords";
 
 export interface Vector2 {
   x: number;
@@ -51,13 +54,17 @@ export class InputController {
   /** Direction to aim an attack: mouse pointer on desktop, else last movement direction. */
   getAimVector(originX: number, originY: number, fallback: Vector2): Vector2 {
     const pointer = this.scene.input.activePointer;
-    if (pointer.isDown && !touchState.attackHeld) {
-      const cam = this.scene.cameras.main;
-      const worldPoint = cam.getWorldPoint(pointer.x, pointer.y);
-      const dx = worldPoint.x - originX;
-      const dy = worldPoint.y - originY;
-      const len = Math.hypot(dx, dy);
-      if (len > 0) return { x: dx / len, y: dy / len };
+    const camera = threeLayer.context?.camera;
+    if (pointer.isDown && !touchState.attackHeld && camera) {
+      const hit = raycastGround(pointer.x, pointer.y, LOGICAL_WIDTH, LOGICAL_HEIGHT, camera);
+      if (hit) {
+        const worldX = fromThreeX(hit.x);
+        const worldY = fromThreeZ(hit.z);
+        const dx = worldX - originX;
+        const dy = worldY - originY;
+        const len = Math.hypot(dx, dy);
+        if (len > 0) return { x: dx / len, y: dy / len };
+      }
     }
     if (fallback.x !== 0 || fallback.y !== 0) return fallback;
     return { x: 0, y: 1 };
