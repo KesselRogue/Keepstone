@@ -28,8 +28,8 @@ export function buildLevelGeometry(scene: Phaser.Scene, level: LevelDefinition):
       if (line[col] === "#") {
         walls.create(worldX, worldY, "tex-wall");
       } else {
-        const tint = (row + col) % 2 === 0 ? 0x2a2a2a : 0x242424;
-        scene.add.rectangle(worldX, worldY, tileSize, tileSize, tint).setDepth(-10);
+        const floorTex = (row + col) % 2 === 0 ? "tex-floor" : "tex-floor-alt";
+        scene.add.image(worldX, worldY, floorTex).setDepth(-10);
       }
     }
   }
