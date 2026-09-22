@@ -6,6 +6,7 @@ import { persistCharacter } from "./systems/gameState";
 import { ThreeContext } from "./three/ThreeContext";
 import { WorldSync } from "./three/WorldSync";
 import { ChaseCamera } from "./three/ChaseCamera";
+import { buildLevel3D } from "./three/LevelBuilder";
 import { playerPosition } from "./three/playerPosition";
 import { TOWN_LEVEL } from "./data/levels";
 
@@ -13,21 +14,22 @@ const game = new Phaser.Game(gameConfig);
 
 window.addEventListener("beforeunload", persistCharacter);
 
-// --- Camera spike (migration build-order step 4) ---
-// Swaps the still-static spike camera for the real chase camera, following
-// the synced tracking box. Phaser's own player sprite still renders
-// normally alongside it for comparison.
+// --- Level geometry spike (migration build-order step 5) ---
+// Builds the actual town's walls/floor in 3D from the same grid data the
+// Phaser side uses, to prove grid alignment. Phaser's own 2D walls/floor
+// still render on top for visual comparison (nothing hidden yet — that's
+// the next step).
 // TODO: replaced by real WorldSync-driven rendering of the whole level.
 game.events.once(Phaser.Core.Events.READY, () => {
   const container = document.getElementById("game-container")!;
   const three = new ThreeContext(container, game.canvas);
 
-  const ground = new THREE.Mesh(
-    new THREE.PlaneGeometry(60, 60),
-    new THREE.MeshStandardMaterial({ color: 0x3a5a3a }),
-  );
-  ground.rotation.x = -Math.PI / 2;
-  three.scene.add(ground);
+  const levelGroup = buildLevel3D(TOWN_LEVEL, {
+    wallColor: 0x2f6b3a,
+    floorColor: 0x3a5a3a,
+    floorColorAlt: 0x355536,
+  });
+  three.scene.add(levelGroup);
 
   const marker = new THREE.Mesh(
     new THREE.BoxGeometry(0.8, 1.6, 0.8),
