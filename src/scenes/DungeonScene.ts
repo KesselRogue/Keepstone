@@ -2,6 +2,7 @@ import Phaser from "phaser";
 import { DUNGEON_LEVEL, TOWN_LEVEL } from "../data/levels";
 import { Player } from "../entities/Player";
 import { Enemy } from "../entities/Enemy";
+import { Pickup } from "../entities/Pickup";
 import { Skulker } from "../entities/enemies/Skulker";
 import { Brute } from "../entities/enemies/Brute";
 import { InputController } from "../systems/InputController";
@@ -11,14 +12,10 @@ import { resolveAttack } from "../systems/CombatSystem";
 import { grantXp } from "../systems/LevelingSystem";
 import { rollDrop } from "../systems/LootSystem";
 import { defaultRng } from "../utils/rng";
-import {
-  buildLevelGeometry,
-  createExitZones,
-  tileToWorld,
-  spawnPickupSprite,
-  wireCharacterSheetOpener,
-  type ExitZone,
-} from "./levelUtils";
+import { buildLevelGeometry, createExitZones, tileToWorld, wireCharacterSheetOpener, type ExitZone } from "./levelUtils";
+import { threeLayer } from "../three/threeLayer";
+import { buildLevel3D } from "../three/LevelBuilder";
+import { DUNGEON_THEME_3D } from "../three/themes3D";
 
 interface SceneEntryData {
   spawnCol?: number;
@@ -59,6 +56,15 @@ export class DungeonScene extends Phaser.Scene {
     this.inputController = new InputController(this);
     wireCharacterSheetOpener(this, this.player);
 
+    threeLayer.setLevelGroup(buildLevel3D(level, DUNGEON_THEME_3D));
+    threeLayer.chaseCamera?.setBounds({
+      minX: 1,
+      maxX: level.grid[0].length - 2,
+      minZ: 1,
+      maxZ: level.grid.length - 2,
+    });
+    threeLayer.chaseCamera?.snapTo(spawnPos.x, spawnPos.y);
+
     this.enemies = this.physics.add.group();
     for (const spawn of level.spawns) {
       const pos = tileToWorld(level, spawn.col, spawn.row);
@@ -70,9 +76,7 @@ export class DungeonScene extends Phaser.Scene {
     this.physics.add.collider(this.player, this.enemies);
 
     this.pickups = this.physics.add.group();
-    this.physics.add.overlap(this.player, this.pickups, (_player, pickup) =>
-      this.handlePickup(pickup as Phaser.Physics.Arcade.Sprite),
-    );
+    this.physics.add.overlap(this.player, this.pickups, (_player, pickup) => this.handlePickup(pickup as Pickup));
 
     this.exitZones = createExitZones(this, level);
     for (const { zone, exit } of this.exitZones) {
@@ -107,6 +111,9 @@ export class DungeonScene extends Phaser.Scene {
     for (const enemy of deadEnemies) this.handleEnemyDeath(enemy);
 
     if (this.player.isDead()) this.handlePlayerDeath();
+
+    threeLayer.chaseCamera?.update(this.player.x, this.player.y);
+    threeLayer.render();
   }
 
   private performPlayerAttack(): void {
@@ -138,7 +145,7 @@ export class DungeonScene extends Phaser.Scene {
     // Boss kills are guaranteed epic — grunts still roll the normal rarity table.
     const drop = rollDrop(enemy.def, defaultRng, isBrute ? "epic" : undefined);
     if (drop) {
-      const pickup = spawnPickupSprite(this, enemy.x, enemy.y, drop);
+      const pickup = new Pickup(this, enemy.x, enemy.y, drop);
       this.pickups.add(pickup);
     }
 
@@ -174,14 +181,11 @@ export class DungeonScene extends Phaser.Scene {
     });
   }
 
-  private handlePickup(sprite: Phaser.Physics.Arcade.Sprite): void {
-    const item = sprite.getData("item") as ReturnType<typeof rollDrop>;
-    if (item) {
-      addItem(this.player.character, item);
-      this.game.events.emit("item-pickup", item);
-      persistCharacter();
-    }
-    sprite.destroy();
+  private handlePickup(pickup: Pickup): void {
+    addItem(this.player.character, pickup.item);
+    this.game.events.emit("item-pickup", pickup.item);
+    persistCharacter();
+    pickup.destroy();
   }
 
   private handleExit(toScene: string, toSpawn: { col: number; row: number }): void {
