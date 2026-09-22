@@ -13,6 +13,7 @@ body {
 }
 
 #game-container {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -23,4 +24,18 @@ body {
 #game-container canvas {
   max-width: 100%;
   max-height: 100%;
+}
+
+/* The Three.js 3D-world canvas sits behind Phaser's canvas (which draws the
+   2D UI on top of it) — position/size are synced in JS to exactly match
+   Phaser's rendered canvas rect, since Scale.FIT computes that dynamically. */
+#three-canvas {
+  position: absolute;
+  pointer-events: none;
+  z-index: 0;
+}
+
+#game-container canvas:not(#three-canvas) {
+  position: relative;
+  z-index: 1;
 }

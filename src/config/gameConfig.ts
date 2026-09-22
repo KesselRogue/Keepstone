@@ -10,7 +10,7 @@ import { VendorScene } from "../scenes/VendorScene";
 export const gameConfig: Phaser.Types.Core.GameConfig = {
   type: Phaser.AUTO,
   parent: "game-container",
-  backgroundColor: "#141414",
+  transparent: true,
   width: 800,
   height: 600,
   pixelArt: true,
