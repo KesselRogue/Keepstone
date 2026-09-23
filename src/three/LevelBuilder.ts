@@ -37,6 +37,13 @@ export function buildLevel3D(level: LevelDefinition, theme: LevelTheme3D): THREE
       const x = toThreeX(worldPos.x);
       const z = toThreeZ(worldPos.y);
 
+      if (line[col] === "@") {
+        // Landmark footprint (e.g. the town's keep) — collides like a wall
+        // (see levelUtils.buildLevelGeometry) but its 3D visual is a custom
+        // structure added by the scene itself, not a generic wall box.
+        continue;
+      }
+
       if (line[col] === "#") {
         const model = theme.wallModelUrl ? getModelClone(theme.wallModelUrl) : null;
         if (model) {

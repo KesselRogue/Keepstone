@@ -1,7 +1,10 @@
 /**
  * Levels are authored as a simple text grid rather than Tiled JSON — far less
  * error-prone to hand-write and verify without a tilemap editor GUI.
- * Legend: '#' wall, '.' floor, '~' floor (alt tone, purely visual variety).
+ * Legend: '#' wall, '.' floor, '~' floor (alt tone, purely visual variety),
+ * '@' impassable landmark — solid like a wall for collision, but the 3D
+ * builder skips its default wall visual so a custom structure (e.g. the
+ * town's keep) can occupy that footprint instead.
  */
 export interface RoomSpawn {
   enemyDefId: string;

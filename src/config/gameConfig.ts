@@ -8,6 +8,9 @@ import { CharacterScene } from "../scenes/CharacterScene";
 import { VendorScene } from "../scenes/VendorScene";
 import { DialogueScene } from "../scenes/DialogueScene";
 import { QuestLogScene } from "../scenes/QuestLogScene";
+import { NorthWildsScene } from "../scenes/NorthWildsScene";
+import { EastWildsScene } from "../scenes/EastWildsScene";
+import { WestWildsScene } from "../scenes/WestWildsScene";
 
 export const gameConfig: Phaser.Types.Core.GameConfig = {
   type: Phaser.AUTO,
@@ -40,5 +43,8 @@ export const gameConfig: Phaser.Types.Core.GameConfig = {
     VendorScene,
     DialogueScene,
     QuestLogScene,
+    NorthWildsScene,
+    EastWildsScene,
+    WestWildsScene,
   ],
 };

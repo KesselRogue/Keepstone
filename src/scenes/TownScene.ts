@@ -1,8 +1,9 @@
 import Phaser from "phaser";
 import * as THREE from "three";
-import { TOWN_LEVEL } from "../data/levels";
+import { TOWN_LEVEL, KEEP_FOOTPRINT } from "../data/levels";
 import type { LevelDefinition } from "../types/Level";
 import { Player } from "../entities/Player";
+import { Villager } from "../entities/Villager";
 import { InputController } from "../systems/InputController";
 import { playerCharacter } from "../systems/gameState";
 import {
@@ -22,6 +23,8 @@ import { Billboard } from "../three/Billboard";
 import { TOWN_THEME_3D } from "../three/themes3D";
 import { isClickNearWorldPoint } from "../three/Nameplates";
 import { toThreeX, toThreeZ, LOGICAL_WIDTH, LOGICAL_HEIGHT } from "../three/coords";
+import { buildKeepStructure } from "../three/buildKeep";
+import { buildShack } from "../three/buildShack";
 
 interface SceneEntryData {
   spawnCol?: number;
@@ -34,6 +37,33 @@ const VENDOR_BILLBOARD_TEXTURE: Record<VendorId, string> = {
   armor: "assets/sprites/vendor-armorer.png",
   jewelry: "assets/sprites/vendor-jeweler.png",
 };
+
+// Fixed town layout, arranged around the keep at the grid's center (see
+// KEEP_FOOTPRINT in data/levels.ts). Tile coordinates, not game pixels.
+const VENDOR_SPOTS: { vendorId: VendorId; col: number; row: number }[] = [
+  { vendorId: "weapons", col: 23, row: 15 },
+  { vendorId: "armor", col: 11, row: 15 },
+  { vendorId: "jewelry", col: 17, row: 22 },
+];
+const ELDER_SPOT = { col: 17, row: 10 };
+const SHACK_SPOTS: { col: number; row: number }[] = [
+  { col: 7, row: 7 },
+  { col: 27, row: 7 },
+  { col: 7, row: 23 },
+  { col: 27, row: 23 },
+  { col: 10, row: 26 },
+  { col: 24, row: 26 },
+];
+const VILLAGER_HOMES: { col: number; row: number }[] = [
+  { col: 10, row: 10 },
+  { col: 24, row: 10 },
+  { col: 10, row: 20 },
+  { col: 24, row: 20 },
+  { col: 14, row: 8 },
+  { col: 20, row: 8 },
+  { col: 14, row: 24 },
+  { col: 20, row: 24 },
+];
 
 interface VendorNpc {
   vendorId: VendorId;
@@ -54,6 +84,7 @@ export class TownScene extends Phaser.Scene {
   private transitioning = false;
   private vendorNpcs: VendorNpc[] = [];
   private talkNpcs: TalkNpc[] = [];
+  private villagers: Villager[] = [];
 
   constructor() {
     super("Town");
@@ -63,16 +94,11 @@ export class TownScene extends Phaser.Scene {
     this.transitioning = false;
     this.vendorNpcs = [];
     this.talkNpcs = [];
+    this.villagers = [];
     const level = TOWN_LEVEL;
     const built = buildLevelGeometry(this, level, TOWN_THEME);
     this.physics.world.setBounds(0, 0, built.widthPx, built.heightPx);
     this.cameras.main.setBounds(0, 0, built.widthPx, built.heightPx);
-
-    // Decorative bushes/mushrooms and vendor shop facades are deferred —
-    // they were flat 2D-world sprites that won't align with the Three
-    // perspective camera's projection (Phaser's own 2D camera follow
-    // computes screen position differently). Proper 3D versions come with
-    // the Retro Fantasy Kit integration pass.
 
     const spawnCol = data?.spawnCol ?? level.playerStart.col;
     const spawnRow = data?.spawnRow ?? level.playerStart.row;
@@ -86,7 +112,9 @@ export class TownScene extends Phaser.Scene {
     wireCharacterSheetOpener(this, this.player);
     wireQuestLogOpener(this);
 
-    threeLayer.setLevelGroup(buildLevel3D(level, TOWN_THEME_3D));
+    const levelGroup = buildLevel3D(level, TOWN_THEME_3D);
+    this.addTownLandmarks(levelGroup, level);
+    threeLayer.setLevelGroup(levelGroup);
     threeLayer.chaseCamera?.setBounds({
       minX: 1,
       maxX: level.grid[0].length - 2,
@@ -100,10 +128,9 @@ export class TownScene extends Phaser.Scene {
       this.physics.add.overlap(this.player, zone, () => this.handleExit(exit.toScene, exit.toSpawn));
     }
 
-    this.spawnVendorNpc(level, "weapons", level.playerStart.col + 4, level.playerStart.row + 1);
-    this.spawnVendorNpc(level, "armor", level.playerStart.col - 4, level.playerStart.row + 1);
-    this.spawnVendorNpc(level, "jewelry", level.playerStart.col + 4, level.playerStart.row + 4);
-    this.spawnTalkNpc(level, ELDER_NPC_ID, "assets/sprites/npc-elder.png", level.playerStart.col, level.playerStart.row + 6);
+    for (const spot of VENDOR_SPOTS) this.spawnVendorNpc(level, spot.vendorId, spot.col, spot.row);
+    this.spawnTalkNpc(level, ELDER_NPC_ID, "assets/sprites/npc-elder.png", ELDER_SPOT.col, ELDER_SPOT.row);
+    this.spawnVillagers(level);
 
     // Vendor/NPC clicks can't use Phaser's setInteractive() hit testing —
     // same reason as the player avatar click in wireCharacterSheetOpener
@@ -131,8 +158,40 @@ export class TownScene extends Phaser.Scene {
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       for (const npc of this.vendorNpcs) if (npc.billboard) threeLayer.context?.scene.remove(npc.billboard.sprite);
       for (const npc of this.talkNpcs) if (npc.billboard) threeLayer.context?.scene.remove(npc.billboard.sprite);
+      for (const villager of this.villagers) villager.destroy();
       this.vendorNpcs = [];
       this.talkNpcs = [];
+      this.villagers = [];
+    });
+  }
+
+  /** Adds the keep and its surrounding shacks as children of the level's own
+   * 3D group, so they get cleaned up automatically on scene swap along with
+   * the rest of the level geometry (see threeLayer.setLevelGroup). */
+  private addTownLandmarks(group: THREE.Group, level: LevelDefinition): void {
+    const keepCenter = tileToWorld(
+      level,
+      KEEP_FOOTPRINT.col + (KEEP_FOOTPRINT.width - 1) / 2,
+      KEEP_FOOTPRINT.row + (KEEP_FOOTPRINT.height - 1) / 2,
+    );
+    group.add(buildKeepStructure({ centerX: keepCenter.x, centerY: keepCenter.y, footprintTiles: KEEP_FOOTPRINT.width }));
+
+    SHACK_SPOTS.forEach((spot, i) => {
+      const pos = tileToWorld(level, spot.col, spot.row);
+      for (const obj of buildShack(pos, i)) group.add(obj);
+    });
+  }
+
+  private spawnVillagers(level: LevelDefinition): void {
+    const textures = [
+      "assets/sprites/villager-1.png",
+      "assets/sprites/villager-2.png",
+      "assets/sprites/villager-3.png",
+      "assets/sprites/villager-elder.png",
+    ];
+    VILLAGER_HOMES.forEach((home, i) => {
+      const pos = tileToWorld(level, home.col, home.row);
+      this.villagers.push(new Villager(this, pos.x, pos.y, textures[i % textures.length]));
     });
   }
 
@@ -170,8 +229,9 @@ export class TownScene extends Phaser.Scene {
     this.scene.start(toScene, { spawnCol: toSpawn.col, spawnRow: toSpawn.row });
   }
 
-  update(_time: number, delta: number): void {
+  update(time: number, delta: number): void {
     this.player.update(delta, this.inputController);
+    for (const villager of this.villagers) villager.update(delta, time);
     threeLayer.chaseCamera?.update(this.player.x, this.player.y);
     threeLayer.render();
   }

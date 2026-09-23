@@ -33,6 +33,9 @@ export const TOWN_THEME: LevelTheme = {
   floor: "tex-grass",
   floorAlt: "tex-grass-alt",
 };
+// The wilds reuse Town's tree/grass art (same outdoor pack) — the danger
+// gradient is conveyed through enemy tiering, not different tiles.
+export const WILDS_THEME: LevelTheme = TOWN_THEME;
 
 /**
  * Builds the Arcade Physics wall bodies for collision only — the real
@@ -52,7 +55,7 @@ export function buildLevelGeometry(
   for (let row = 0; row < grid.length; row++) {
     const line = grid[row];
     for (let col = 0; col < line.length; col++) {
-      if (line[col] !== "#") continue;
+      if (line[col] !== "#" && line[col] !== "@") continue;
       const worldX = col * tileSize + tileSize / 2;
       const worldY = row * tileSize + tileSize / 2;
       const wallTex = theme.wallAlt && (row + col) % 2 === 0 ? theme.wallAlt : theme.wall;

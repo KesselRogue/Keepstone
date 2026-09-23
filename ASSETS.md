@@ -8,9 +8,13 @@
   `icon-weapon.png`, `icon-shield.png`, `vendor-weaponsmith.png` (dwarf),
   `vendor-armorer.png` (plumed knight), `vendor-jeweler.png` (woman in
   purple), `npc-elder.png` (purple-robed bearded elder — the town's quest
-  giver, Elder Maren), and `public/assets/tiles/wall.png`, `floor.png`,
-  `floor-alt.png` — each cropped from the pack's tilemap and resized to
-  this project's target pixel dimensions.
+  giver, Elder Maren), `villager-1.png`, `villager-2.png`, `villager-3.png`,
+  `villager-elder.png` (ambient wandering town NPCs), and
+  `public/assets/tiles/wall.png`, `floor.png`, `floor-alt.png` — each
+  cropped from the pack's tilemap and resized to this project's target
+  pixel dimensions. The Reaver and Warlord enemy tiers (see
+  data/enemies.ts) reuse the Skulker/Brute art with a tint rather than
+  needing art of their own.
 
 ## Tiny Town (Kenney)
 
@@ -18,9 +22,10 @@
 - License: CC0 1.0 (public domain) — https://creativecommons.org/publicdomain/zero/1.0/
 - Used for the town hub's outdoor look: `public/assets/tiles/grass.png`,
   `grass-alt.png`, `tree-green.png`, `tree-gold.png` (floor + border), and
-  `public/assets/sprites/bush.png`, `mushroom.png` (scattered decoration),
-  `roof-gray.png`, `roof-red.png`, `door-tan-double.png`, `door-gray.png`,
-  `window-tan.png` (simple roof+door "shop" facades behind each vendor NPC).
+  `roof-gray.png`, `roof-red.png`, `door-tan-double.png`, `door-gray.png`
+  (composited into the small shacks scattered around the keep — see
+  three/buildShack.ts). `bush.png`, `mushroom.png`, `window-tan.png` are
+  preloaded but not yet placed anywhere.
 
 Not required by either license, but Kenney appreciates a credit: "Tiny
 Dungeon" and "Tiny Town" assets by Kenney (kenney.nl).

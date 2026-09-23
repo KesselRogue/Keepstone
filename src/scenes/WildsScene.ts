@@ -1,5 +1,6 @@
 import Phaser from "phaser";
-import { DUNGEON_LEVEL, TOWN_LEVEL } from "../data/levels";
+import type { LevelDefinition } from "../types/Level";
+import { TOWN_LEVEL } from "../data/levels";
 import { Player } from "../entities/Player";
 import { Enemy } from "../entities/Enemy";
 import { Pickup } from "../entities/Pickup";
@@ -10,6 +11,7 @@ import { getEffectiveStats, addItem } from "../systems/InventorySystem";
 import { resolveAttack } from "../systems/CombatSystem";
 import { grantXp } from "../systems/LevelingSystem";
 import { rollDrop } from "../systems/LootSystem";
+import { recordKill } from "../systems/QuestSystem";
 import { defaultRng } from "../utils/rng";
 import {
   buildLevelGeometry,
@@ -17,12 +19,12 @@ import {
   tileToWorld,
   wireCharacterSheetOpener,
   wireQuestLogOpener,
+  WILDS_THEME,
   type ExitZone,
 } from "./levelUtils";
-import { recordKill } from "../systems/QuestSystem";
 import { threeLayer } from "../three/threeLayer";
 import { buildLevel3D } from "../three/LevelBuilder";
-import { DUNGEON_THEME_3D } from "../three/themes3D";
+import type { LevelTheme3D } from "../three/LevelBuilder";
 
 interface SceneEntryData {
   spawnCol?: number;
@@ -33,7 +35,16 @@ const ATTACK_REACH = 42;
 const ATTACK_HIT_RADIUS = 34;
 const ATTACK_TRIGGER_SLACK = 1.3;
 
-export class DungeonScene extends Phaser.Scene {
+/**
+ * Base class for the open wilderness zones outside Keepstone's walls
+ * (NorthWildsScene/EastWildsScene/WestWildsScene) — same combat/exit loop as
+ * DungeonScene, generalized over which LevelDefinition/theme to load since
+ * the three zones differ only in content, not mechanics. No boss/victory
+ * banner here — that stays a Dungeon-specific beat.
+ */
+export class WildsScene extends Phaser.Scene {
+  private level: LevelDefinition;
+  private theme3D: LevelTheme3D;
   private player!: Player;
   private inputController!: InputController;
   private enemies!: Phaser.Physics.Arcade.Group;
@@ -41,14 +52,16 @@ export class DungeonScene extends Phaser.Scene {
   private exitZones: ExitZone[] = [];
   private transitioning = false;
 
-  constructor() {
-    super("Dungeon");
+  constructor(key: string, level: LevelDefinition, theme3D: LevelTheme3D) {
+    super(key);
+    this.level = level;
+    this.theme3D = theme3D;
   }
 
   create(data: SceneEntryData): void {
     this.transitioning = false;
-    const level = DUNGEON_LEVEL;
-    const built = buildLevelGeometry(this, level);
+    const level = this.level;
+    const built = buildLevelGeometry(this, level, WILDS_THEME);
     this.physics.world.setBounds(0, 0, built.widthPx, built.heightPx);
     this.cameras.main.setBounds(0, 0, built.widthPx, built.heightPx);
 
@@ -64,7 +77,7 @@ export class DungeonScene extends Phaser.Scene {
     wireCharacterSheetOpener(this, this.player);
     wireQuestLogOpener(this);
 
-    threeLayer.setLevelGroup(buildLevel3D(level, DUNGEON_THEME_3D));
+    threeLayer.setLevelGroup(buildLevel3D(level, this.theme3D));
     threeLayer.chaseCamera?.setBounds({
       minX: 1,
       maxX: level.grid[0].length - 2,
@@ -145,14 +158,11 @@ export class DungeonScene extends Phaser.Scene {
   }
 
   private handleEnemyDeath(enemy: Enemy): void {
-    const isBrute = enemy.def.id === "brute";
-
     const result = grantXp(this.player.character, enemy.def.xpReward);
     if (result.leveledUp) this.game.events.emit("level-up", result.newLevel);
     recordKill(this.player.character, enemy.def.id);
 
-    // Boss kills are guaranteed epic — grunts still roll the normal rarity table.
-    const drop = rollDrop(enemy.def, defaultRng, isBrute ? "epic" : undefined);
+    const drop = rollDrop(enemy.def, defaultRng);
     if (drop) {
       const pickup = new Pickup(this, enemy.x, enemy.y, drop);
       this.pickups.add(pickup);
@@ -160,34 +170,6 @@ export class DungeonScene extends Phaser.Scene {
 
     enemy.destroy();
     persistCharacter();
-
-    if (isBrute) this.showVictoryBanner();
-  }
-
-  /** Non-blocking: play continues so the player can walk over and collect the
-   * boss's drop, then leave via the normal exit whenever they're ready. */
-  private showVictoryBanner(): void {
-    const { width, height } = this.scale;
-    const text = this.add
-      .text(
-        this.cameras.main.scrollX + width / 2,
-        this.cameras.main.scrollY + height / 2 - 140,
-        "Keep Cleared!\nThe Brute falls — collect its spoils.",
-        { fontSize: "22px", color: "#ffe66d", align: "center", fontStyle: "bold" },
-      )
-      .setOrigin(0.5)
-      .setScrollFactor(0)
-      .setDepth(3000)
-      .setAlpha(0);
-
-    this.tweens.add({
-      targets: text,
-      alpha: 1,
-      duration: 300,
-      yoyo: true,
-      hold: 2200,
-      onComplete: () => text.destroy(),
-    });
   }
 
   private handlePickup(pickup: Pickup): void {

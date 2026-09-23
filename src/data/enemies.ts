@@ -15,6 +15,7 @@ export const ENEMY_DEFS: Record<string, EnemyDefinition> = {
       critChance: 0,
     },
     xpReward: 14,
+    spriteKind: "skulker",
     lootTable: [
       { itemDefId: "rusty_blade", weight: 16 },
       { itemDefId: "heavy_cleaver", weight: 6 },
@@ -50,6 +51,7 @@ export const ENEMY_DEFS: Record<string, EnemyDefinition> = {
       critChance: 0,
     },
     xpReward: 100,
+    spriteKind: "brute",
     // Boss kills force epic rarity (see handleVictory in DungeonScene) so every
     // entry here already reads as "special" regardless of which one is picked.
     lootTable: [
@@ -65,6 +67,75 @@ export const ENEMY_DEFS: Record<string, EnemyDefinition> = {
       attackRadius: 52,
       attackCooldownMs: 1600,
       windupMs: 500,
+    },
+  },
+
+  // -- wilds tiers: same AI/loot machinery as skulker/brute, reskinned via
+  // tint + tougher stats so danger visibly escalates with distance from
+  // town (see data/levels.ts buildWildsLevel). --
+  reaver: {
+    id: "reaver",
+    name: "Reaver",
+    color: 0xd98c3b,
+    size: 26,
+    stats: {
+      maxHp: 34,
+      hp: 34,
+      attackPower: 9,
+      defense: 1,
+      moveSpeed: 100,
+      critChance: 0.03,
+    },
+    xpReward: 30,
+    spriteKind: "skulker",
+    tint: 0xd98c3b,
+    lootTable: [
+      { itemDefId: "heavy_cleaver", weight: 14 },
+      { itemDefId: "iron_gauntlets", weight: 14 },
+      { itemDefId: "reinforced_greaves", weight: 14 },
+      { itemDefId: "swift_boots", weight: 12 },
+      { itemDefId: "reinforced_belt", weight: 12 },
+      { itemDefId: "aegis_wall", weight: 10 },
+      { itemDefId: "sentinel_spaulders", weight: 10 },
+      { itemDefId: "bone_charm", weight: 8 },
+      { itemDefId: "lucky_ring", weight: 8 },
+    ],
+    aiProfile: {
+      detectRadius: 200,
+      attackRadius: 36,
+      attackCooldownMs: 800,
+    },
+  },
+  warlord: {
+    id: "warlord",
+    name: "Warlord",
+    color: 0xcc4444,
+    size: 42,
+    stats: {
+      maxHp: 75,
+      hp: 75,
+      attackPower: 13,
+      defense: 3,
+      moveSpeed: 85,
+      critChance: 0.02,
+    },
+    xpReward: 55,
+    spriteKind: "brute",
+    tint: 0xcc4444,
+    lootTable: [
+      { itemDefId: "sentinel_mail", weight: 18 },
+      { itemDefId: "warden_helm", weight: 16 },
+      { itemDefId: "keeper_amulet", weight: 14 },
+      { itemDefId: "reinforced_greaves", weight: 14 },
+      { itemDefId: "aegis_wall", weight: 14 },
+      { itemDefId: "iron_gauntlets", weight: 12 },
+      { itemDefId: "swift_boots", weight: 12 },
+    ],
+    aiProfile: {
+      detectRadius: 220,
+      attackRadius: 46,
+      attackCooldownMs: 1300,
+      windupMs: 400,
     },
   },
 };

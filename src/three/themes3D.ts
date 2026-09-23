@@ -15,6 +15,15 @@ export const DUNGEON_THEME_3D: LevelTheme3D = {
   floorModelUrl: "assets/models/dungeon-floor.glb",
 };
 
+// The wilds beyond Keepstone's walls — same outdoor palette as Town but
+// darker, so the danger gradient (see data/levels.ts buildWildsLevel) reads
+// visually too, not just through tougher enemies.
+export const WILDS_THEME_3D: LevelTheme3D = {
+  wallColor: 0x24401f,
+  floorColor: 0x33471f,
+  floorColorAlt: 0x2c3f1c,
+};
+
 export interface BillboardSpec {
   textureUrl: string | null;
   size: number; // billboard is square: width == height, in Three units
@@ -26,3 +35,18 @@ export const BRUTE_BILLBOARD: BillboardSpec = { textureUrl: "assets/sprites/brut
 // tex-pickup is a plain procedurally-generated white square (see
 // PreloaderScene) — no image file to load, just a tintable flat sprite.
 export const PICKUP_BILLBOARD: BillboardSpec = { textureUrl: null, size: 0.45 };
+
+/** Which billboard art an enemy tier reuses — new tougher tiers (Reaver,
+ * Warlord) reuse the Skulker/Brute look and are told apart by their
+ * persistent tint (EnemyDefinition.tint) rather than needing new art. */
+export const BILLBOARD_BY_SPRITE_KIND: Record<"skulker" | "brute", BillboardSpec> = {
+  skulker: SKULKER_BILLBOARD,
+  brute: BRUTE_BILLBOARD,
+};
+
+export const VILLAGER_BILLBOARDS: BillboardSpec[] = [
+  { textureUrl: "assets/sprites/villager-1.png", size: 0.85 },
+  { textureUrl: "assets/sprites/villager-2.png", size: 0.85 },
+  { textureUrl: "assets/sprites/villager-3.png", size: 0.85 },
+  { textureUrl: "assets/sprites/villager-elder.png", size: 0.8 },
+];

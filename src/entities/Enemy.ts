@@ -6,7 +6,7 @@ import { threeLayer } from "../three/threeLayer";
 import { Billboard } from "../three/Billboard";
 import { worldToScreen } from "../three/Nameplates";
 import { toThreeX, toThreeZ, LOGICAL_WIDTH, LOGICAL_HEIGHT } from "../three/coords";
-import { SKULKER_BILLBOARD, BRUTE_BILLBOARD } from "../three/themes3D";
+import { BILLBOARD_BY_SPRITE_KIND } from "../three/themes3D";
 
 const HP_BAR_WIDTH = 34;
 const HP_BAR_HEIGHT = 5;
@@ -43,8 +43,9 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
       .setDepth(41);
 
     if (threeLayer.context) {
-      const spec = def.id === "brute" ? BRUTE_BILLBOARD : SKULKER_BILLBOARD;
+      const spec = BILLBOARD_BY_SPRITE_KIND[def.spriteKind];
       this.billboard = new Billboard(this, spec.textureUrl, spec.size, spec.size);
+      this.billboard.setTint(def.tint ?? null);
       threeLayer.context.scene.add(this.billboard.sprite);
       this.billboard.update();
     }
@@ -58,7 +59,7 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
 
     if (this.billboard) {
       this.billboard.update();
-      this.billboard.setTint(decision.state === "windup" ? 0xffff66 : null);
+      this.billboard.setTint(decision.state === "windup" ? 0xffff66 : (this.def.tint ?? null));
     }
 
     this.updateHpBarPosition();
@@ -92,7 +93,7 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
     this.hp = Math.max(0, this.hp - amount);
     this.billboard?.setTint(0xffffff);
     this.scene.time.delayedCall(60, () => {
-      if (this.active) this.billboard?.setTint(null);
+      if (this.active) this.billboard?.setTint(this.def.tint ?? null);
     });
     return this.hp <= 0;
   }
